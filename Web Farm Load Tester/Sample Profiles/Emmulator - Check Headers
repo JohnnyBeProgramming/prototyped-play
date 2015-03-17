@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ProfileConfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Tracker xsi:type="WebResponseTracker">
+    <WebUrl>http://localhost:50850/</WebUrl>
+    <MaxCount>100</MaxCount>
+    <KeepAllive>true</KeepAllive>
+    <DelayTime>100</DelayTime>
+    <MatchType>HTTP Headers</MatchType>
+    <MatchExpression>MyServerName</MatchExpression>
+    <MatchGroupIndex>0</MatchGroupIndex>
+    <Cookies />
+    <Headers>
+      <Item>
+        <Key>
+          <string>X-Echo-info</string>
+        </Key>
+        <Value>
+          <string>MyServerName</string>
+        </Value>
+      </Item>
+      <Item>
+        <Key>
+          <string>X-To-Cookie</string>
+        </Key>
+        <Value>
+          <string>MyCookieVal</string>
+        </Value>
+      </Item>
+    </Headers>
+    <TrackerType>HTTP Headers</TrackerType>
+  </Tracker>
+</ProfileConfig>

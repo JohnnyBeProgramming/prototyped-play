@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ProfileConfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Tracker xsi:type="WebResponseTracker">
+    <MaxCount>250</MaxCount>
+    <WebUrl>http://localhost:50850/</WebUrl>
+    <KeepAllive>false</KeepAllive>
+    <DelayTime>100</DelayTime>
+    <MatchExpression>(&lt;title&gt;)(.*)(&lt;/title&gt;)</MatchExpression>
+    <MatchGroupIndex>2</MatchGroupIndex>
+    <Cookies />
+    <Headers />
+  </Tracker>
+</ProfileConfig>
