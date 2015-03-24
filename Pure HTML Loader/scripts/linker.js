@@ -40,7 +40,7 @@
     }
 })(window, document, [
     // Define styles to load
-    { active: true, type: 'style', label: 'Basic Sandbox Styling', source: 'loader.css' },
+    { active: false, type: 'style', label: 'Basic Sandbox Styling', source: 'styles/loader.css' },
     { active: true, type: 'style', label: 'Normalise Browser Styling', source: 'https://cdnjs.cloudflare.com/ajax/libs/normalize/3.0.2/normalize.min.css' },
     { active: true, type: 'style', label: 'Load Twitter Bootstrap CSS', source: 'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css' },
 
