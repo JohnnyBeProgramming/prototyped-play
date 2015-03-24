@@ -1,4 +1,17 @@
-﻿function loadResources() {
+﻿var opts = [
+    // Define default styles to load
+    { active: true, type: 'style', label: 'Basic Sandbox Styling', source: 'loader.css' },
+    { active: true, type: 'style', label: 'Normalise Browser Styling', source: 'https://cdnjs.cloudflare.com/ajax/libs/normalize/3.0.2/normalize.min.css' },
+    { active: true, type: 'style', label: 'Load Twitter Bootstrap CSS', source: 'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css' },
+
+    // Define default scripts to load
+    { active: true, type: 'script', label: 'Include Moderizr Browser Plugin', source: 'https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.8.3/modernizr.min.js' },
+    { active: true, type: 'script', label: 'Add JQuery Script Libraries', source: 'https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js' },
+    { active: true, type: 'script', label: 'Add Angular Tools & Framework', source: 'https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.3.10/angular.js' },
+    { active: true, type: 'script', label: 'Prototyped Utilities & Scripts', source: 'http://www.prototyped.info/assets/lib/ping.js' },
+];
+
+function loadResources() {
     var opts = window.opts;
     try {
         // Populate options for styles and scripts
