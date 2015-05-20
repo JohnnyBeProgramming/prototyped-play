@@ -1,0 +1,19 @@
+﻿<div ng-controller="CookieViewController as cookieCtrl">
+    <div class="input-group input-group-sm">
+        <span class="input-group-addon" id="sizing-addon3">Add Cookie</span>
+        <input ng-model="cookieCtrl.cookies.selected.key" type="text" class="form-control" style="width: 20%;" placeholder="Cookie Name"
+               tabindex="1" />
+        <input ng-model="cookieCtrl.cookies.selected.val" type="text" class="form-control" style="width: 40%;" placeholder="Persisted Value"
+               tabindex="2" />
+        <input ng-model="cookieCtrl.cookies.selected.domain" type="text" class="form-control" style="width: 40%;" placeholder="Specify Domain (or leave blank)"
+               tabindex="3" />
+        <a href="" ng-click="cookieCtrl.process()"
+           tabindex="4" class="input-group-addon" style="">Add Cookie</a>
+    </div>
+    <form role="form" class="thumbnail">
+        <div class="radio" ng-repeat="cookie in cookieCtrl.cookies.current track by cookie.key">
+            <span class="pull-right"><a href="" ng-click="cookieCtrl.cookies.remove(cookie.key)">Delete</a></span>
+            <label ng-click="cookieCtrl.select(cookie)"><input type="radio" name="xxx" ng-bind="cookie.key"><b>{{ cookie.key }}</b> - {{cookie.val}}</label>
+        </div>
+    </form>
+</div>

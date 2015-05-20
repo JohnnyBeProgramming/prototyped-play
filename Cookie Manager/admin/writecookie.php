@@ -1,0 +1,1 @@
+setcookie($_GET['c'], $_GET['v']);
