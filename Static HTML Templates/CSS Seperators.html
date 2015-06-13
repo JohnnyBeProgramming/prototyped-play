@@ -2,165 +2,31 @@
 <html lang="en">
 <head>
     <title>Prototyped Sandbox</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            line-height: 1.42857143;
-            color: #333;
-            font-size: 14px;
-            font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
-            background-repeat: repeat;
-            background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnN2Zz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iMjBweCIgaGVpZ2h0PSIyMHB4IiB2aWV3Qm94PSIwIDAgMjAgMjAiIHByZXNlcnZlQXNwZWN0UmF0aW89InhNaWRZTWlkIG1lZXQiIHpvb21BbmRQYW49ImRpc2FibGUiPjxkZWZzIGlkPSJzdmdFZGl0b3JEZWZzIj48cG9seWdvbiBpZD0ic3ZnRWRpdG9yUG9seWdvbkRlZnMiIHN0cm9rZT0iYmxhY2siIGZpbGw9ImtoYWtpIiBzdHlsZT0idmVjdG9yLWVmZmVjdDogbm9uLXNjYWxpbmctc3Ryb2tlOyBzdHJva2Utd2lkdGg6IDFweDsiLz48L2RlZnM+PHJlY3QgaWQ9InN2Z0VkaXRvckJhY2tncm91bmQiIHg9IjAiIHk9IjAiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgc3R5bGU9ImZpbGw6IG5vbmU7IHN0cm9rZTogbm9uZTsiLz48cmVjdCB4PSIwIiB5PSIwIiBpZD0iZTFfcmVjdGFuZ2xlIiBzdHlsZT0ic3Ryb2tlLXdpZHRoOiAxcHg7IHZlY3Rvci1lZmZlY3Q6IG5vbi1zY2FsaW5nLXN0cm9rZTsiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgZmlsbD0iZ3JheSIvPjxyZWN0IHg9IjEwIiB5PSIxMCIgc3R5bGU9InN0cm9rZS13aWR0aDogMXB4OyB2ZWN0b3ItZWZmZWN0OiBub24tc2NhbGluZy1zdHJva2U7IiB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIGZpbGw9ImdyYXkiIGlkPSJlMl9yZWN0YW5nbGUiLz48L3N2Zz4=');
-        }
-
-        .top-spacer {
-            width: 100%;
-            margin: 32px auto 0;
-            position: fixed;
-        }
-
-            .top-spacer .mask {
-                overflow: hidden;
-                height: 20px;
-            }
-
-                .top-spacer .mask:after {
-                    content: '';
-                    display: block;
-                    margin: -25px auto 0;
-                    width: 50%;
-                    height: 25px;
-                    border-radius: 125px / 12px;
-                    box-shadow: 0 0 8px black;
-                }
-
-            .top-spacer span {
-                width: 50px;
-                height: 50px;
-                position: absolute;
-                bottom: 100%;
-                margin-bottom: -25px;
-                left: 50%;
-                margin-left: -25px;
-                border-radius: 100%;
-                box-shadow: 0 2px 4px #999;
-                background: white;
-            }
-
-                .top-spacer span i {
-                    position: absolute;
-                    top: 4px;
-                    bottom: 4px;
-                    left: 4px;
-                    right: 4px;
-                    border-radius: 100%;
-                    border: 1px dashed #aaa;
-                    text-align: center;
-                    line-height: 40px;
-                    font-style: normal;
-                    color: #999;
-                    z-index: 1000;
-                }
-
-        .vertical-spacer {
-            width: 200px;
-            left: 0;
-            top: 32px;
-            bottom: 24px;
-            position: absolute;
-            display: block;
-            overflow: auto;
-        }
-
-            .vertical-spacer .mask {
-                overflow: hidden;
-                width: 20px;
-                height: 100%;
-            }
-
-            .vertical-spacer.left .mask:after {
-                content: '';
-                display: block;
-                margin-left: -20px;
-                width: 20px;
-                height: 100%;
-                border-radius: 12px / 125px;
-                box-shadow: 0 0 8px black;
-            }
-
-            .vertical-spacer.right .mask {
-                float: right;
-            }
-
-                .vertical-spacer.right .mask:before {
-                    content: '';
-                    display: block;
-                    margin-left: 20px;
-                    width: 20px;
-                    height: 100%;
-                    border-radius: 12px / 125px;
-                    box-shadow: 0 0 8px black;
-                }
-
-        .main-contents {
-            top: 32px;
-            left: 200px;
-            right: 0;
-            bottom: 24px;
-            position: absolute;
-            z-index: 999;
-            overflow: auto;
-        }
-
-        .bottom-spacer {
-            bottom: 0;
-            margin: 0;
-            width: 100%;
-            height: 24px;
-            position: fixed;
-        }
-
-            .bottom-spacer .mask {
-                margin: 0 auto 0;
-                overflow: hidden;
-                height: 20px;
-                width: 100%;
-                position: fixed;
-            }
-
-                .bottom-spacer .mask:after {
-                    content: '';
-                    display: block;
-                    margin: -25px auto 0;
-                    width: 50%;
-                    height: 25px;
-                    border-radius: 125px / 12px;
-                    box-shadow: 0 0 8px black;
-                }
-
-        .view-panel {
-            background-color: rgba(255,255,255,0.95);
-            outline: dashed 1px silver;
-        }
-
-    </style>
+    <link rel="stylesheet" href="assets/css/app.css" />
 </head>
 <body>
+
     <div>
-        <div class="view-panel" style="padding: 6px 32px; text-align:right; float: left; width:50%; box-sizing: border-box;">
+        <div class="view-panel view-toolbar" style="text-align:right; float: left;">
             Top Navigation ( Left )
         </div>
-        <div class="view-panel" style="padding: 6px 32px; text-align:left; float: right; width:50%; box-sizing: border-box;">
+        <div class="view-panel view-toolbar" style="text-align:left; float: right;">
             Top Navigation ( Right )
         </div>
     </div>
-    <div class="top-spacer"><div class="mask"></div><span><i class="fa fa-cube"></i></span></div>
+    <div class="top-spacer">
+        <div class="mask"></div>
+        <span>
+            <i class="fa fa-globe" style="font-size: xx-large;"></i>
+        </span>
+    </div>
+
 
     <div class="vertical-spacer left">
         <div class="mask"></div>
-        <span><i class="fa fa-globe"></i></span>
     </div>
+
+
     <div class="vertical-spacer right view-panel">
         <div class="mask"></div>
         <div ui-view="left" style="padding: 3px; text-align:center;">
@@ -168,9 +34,11 @@
         </div>
     </div>
 
+
     <div ui-view="main" class="main-contents view-panel" style="padding: 3px;">
         Main Contents
     </div>
+
 
     <div class="bottom-spacer">
         <div class="mask"></div>
