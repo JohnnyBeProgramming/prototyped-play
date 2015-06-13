@@ -51,7 +51,8 @@
             else {
                 expires = "";
             }
-            document.cookie = name + "=" + value + expires + "; path=/";
+            console.warn(' - Writing cookie [' + name + '] => ', window.location.host);
+            document.cookie = name + "=" + value + expires + '; domain=.' + window.location.host + '; path=/';
             this.refres();
         }
         this.get = function (c_name) {
@@ -84,15 +85,14 @@
     .controller('MainViewController', function ($rootScope, $sce, CookieStore) {
         this.domain = window.location.host;
         this.linked = [
-            { label: 'Sub Domain', url: 'cookies.html' },
-            { label: 'Localhost', url: 'http://localhost/' },
-            { label: 'Wikipedia', url: 'http://www.wikipedia.com/' },
+            { label: 'Localhost', url: 'http://localhost.com/cookies.html' },
+            { label: 'SEO Domain', url: 'http://seo.localhost.com/cookies.html' },
         ];
         this.cookies = CookieStore;
         this.create = function (link) {
             var key = 'Last Exported';
             var val = new Date().toGMTString();
-            var url = 'admin/writecookie.php?c=' + encodeURIComponent(key) + '&v=' + encodeURIComponent(val);
+            var url = 'admin/inject.php?c=' + encodeURIComponent(key) + '&v=' + encodeURIComponent(val);
             console.info(' - Write Cookie: ', url);
             var refreshObject = new XMLHttpRequest();
             if (!refreshObject) {
@@ -145,7 +145,7 @@
                         wnd.postMessage({ type: 'link', target: JSON.parse(JSON.stringify(link)) }, '*');
                     } else {
                         console.warn('Warning: Could not post the message to a chile iFrame.');
-                    }                    
+                    }
                     /*
                     var newfile = document.createElement('script');
                     newfile.setAttribute("type", "text/javascript");

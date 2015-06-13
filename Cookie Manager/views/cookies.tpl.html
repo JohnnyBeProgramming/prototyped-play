@@ -11,9 +11,12 @@
            tabindex="4" class="input-group-addon" style="">Add Cookie</a>
     </div>
     <form role="form" class="thumbnail">
-        <div class="radio" ng-repeat="cookie in cookieCtrl.cookies.current track by cookie.key">
+        <div class="radio" ng-repeat="cookie in cookieCtrl.cookies.current">
             <span class="pull-right"><a href="" ng-click="cookieCtrl.cookies.remove(cookie.key)">Delete</a></span>
             <label ng-click="cookieCtrl.select(cookie)"><input type="radio" name="xxx" ng-bind="cookie.key"><b>{{ cookie.key }}</b> - {{cookie.val}}</label>
+        </div>
+        <div ng-if="!cookieCtrl.cookies.current.length">
+            <em>No Persisted Values</em>
         </div>
     </form>
 </div>
