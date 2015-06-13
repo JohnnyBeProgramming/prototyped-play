@@ -1,8 +1,4 @@
-﻿@import 'https://cdnjs.cloudflare.com/ajax/libs/normalize/3.0.2/normalize.min.css';
-@import 'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css';
-@import 'https://cdnjs.cloudflare.com/ajax/libs/angular-loading-bar/0.6.0/loading-bar.min.css';
-@import 'https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.2.0/animate.min.css';
-@import 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.3.0/css/font-awesome.min.css';
+﻿@import 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.3.0/css/font-awesome.min.css';
 
 body {
     margin: 0;
@@ -15,6 +11,15 @@ body {
     background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnN2Zz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iMjBweCIgaGVpZ2h0PSIyMHB4IiB2aWV3Qm94PSIwIDAgMjAgMjAiIHByZXNlcnZlQXNwZWN0UmF0aW89InhNaWRZTWlkIG1lZXQiIHpvb21BbmRQYW49ImRpc2FibGUiPjxkZWZzIGlkPSJzdmdFZGl0b3JEZWZzIj48cG9seWdvbiBpZD0ic3ZnRWRpdG9yUG9seWdvbkRlZnMiIHN0cm9rZT0iYmxhY2siIGZpbGw9ImtoYWtpIiBzdHlsZT0idmVjdG9yLWVmZmVjdDogbm9uLXNjYWxpbmctc3Ryb2tlOyBzdHJva2Utd2lkdGg6IDFweDsiLz48L2RlZnM+PHJlY3QgaWQ9InN2Z0VkaXRvckJhY2tncm91bmQiIHg9IjAiIHk9IjAiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgc3R5bGU9ImZpbGw6IG5vbmU7IHN0cm9rZTogbm9uZTsiLz48cmVjdCB4PSIwIiB5PSIwIiBpZD0iZTFfcmVjdGFuZ2xlIiBzdHlsZT0ic3Ryb2tlLXdpZHRoOiAxcHg7IHZlY3Rvci1lZmZlY3Q6IG5vbi1zY2FsaW5nLXN0cm9rZTsiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgZmlsbD0iZ3JheSIvPjxyZWN0IHg9IjEwIiB5PSIxMCIgc3R5bGU9InN0cm9rZS13aWR0aDogMXB4OyB2ZWN0b3ItZWZmZWN0OiBub24tc2NhbGluZy1zdHJva2U7IiB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIGZpbGw9ImdyYXkiIGlkPSJlMl9yZWN0YW5nbGUiLz48L3N2Zz4=');
 }
 
+.noselect {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
 .top-spacer {
     width: 100%;
     margin: 32px auto 0;
@@ -24,7 +29,7 @@ body {
 
     .top-spacer .mask {
         overflow: hidden;
-        height: 20px;
+        height: 8px;
     }
 
         .top-spacer .mask:after {
@@ -93,7 +98,8 @@ body {
     }
 
     .vertical-spacer.right .mask {
-        float: right;
+        right: 0;
+        position: absolute;
     }
 
         .vertical-spacer.right .mask:before {
@@ -127,17 +133,17 @@ body {
     .bottom-spacer .mask {
         margin: 0 auto 0;
         overflow: hidden;
-        height: 20px;
+        height: 6px;
         width: 100%;
-        position: fixed;
+        position: absolute;
     }
 
         .bottom-spacer .mask:after {
             content: '';
             display: block;
-            margin: -25px auto 0;
+            margin: -24px auto 0;
             width: 50%;
-            height: 25px;
+            height: 24px;
             border-radius: 125px / 12px;
             box-shadow: 0 0 8px black;
         }
@@ -152,4 +158,91 @@ body {
     height: 32px;
     padding: 6px 32px;
     box-sizing: border-box;
+}
+
+
+.fade-in {
+    opacity: 0.0;
+    -webkit-animation: fade-in 0.5s forwards;
+    animation: fade-in 0.5s forwards;
+}
+
+@-webkit-keyframes fade-in {
+    100% {
+        opacity: 1.0;
+    }
+}
+
+@keyframes fade-in {
+    100% {
+        opacity: 1.0;
+    }
+}
+
+.fade-out {
+    opacity: 1.0;
+    -webkit-animation: fade-out 0.5s forwards;
+    animation: fade-out 0.5s forwards;
+}
+
+@-webkit-keyframes fade-out {
+    100% {
+        opacity: 0.0;
+    }
+}
+
+@keyframes fade-out {
+    100% {
+        opacity: 0.0;
+    }
+}
+
+.slider-in {
+    left: 32px !important;
+    opacity: 0.5;
+    -webkit-animation: slider-in 0.5s forwards;
+    animation: slider-in 0.5s forwards;
+}
+
+    .slider-in:hover {
+        opacity: 1.0;
+    }
+
+@-webkit-keyframes slider-in {
+    100% {
+        left: 50%;
+        opacity: 1.0;
+    }
+}
+
+@keyframes slider-in {
+    100% {
+        left: 50%;
+        opacity: 1.0;
+    }
+}
+
+.slider-out {
+    left: 50%;
+    opacity: 0.5;
+    -webkit-animation: slider-out 0.5s forwards;
+    animation: slider-out 0.5s forwards;
+}
+
+    .slider-out:hover {
+        opacity: 1.0;
+    }
+
+@-webkit-keyframes slider-out {
+    100% {
+        left: 32px !important;
+        opacity: 1.0;
+    }
+}
+
+@keyframes slider-out {
+    100% {
+        left: 32px !important;
+        opacity: 1.0;
+    }
 }
