@@ -7,30 +7,30 @@
 <body ng-app="myApp">
 
     <div>
-        <div class="striped" style="padding: 6px 32px; text-align:right; float: left; width:50%;">
+        <div class="view-panel" style="padding: 6px 32px; text-align:right; float: left; width:50%; box-sizing: border-box;">
             Top Navigation ( Left )
         </div>
-        <div class="striped" style="padding: 6px 32px; text-align:left; float: right; width:50%;">
+        <div class="view-panel" style="padding: 6px 32px; text-align:left; float: right; width:50%; box-sizing: border-box;">
             Top Navigation ( Right )
         </div>
     </div>
     <div class="top-spacer"><div class="mask"></div><span><i class="fa fa-cube"></i></span></div>
 
     <div class="vertical-spacer left"><div class="mask"></div></div>
-    <div class="vertical-spacer right">
+    <div class="vertical-spacer right view-panel">
         <div class="mask"></div>
-        <div ui-view="left" class="striped" style="padding: 3px; text-align:center;">
+        <div ui-view="left" class="view-panel" style="padding: 3px; text-align:center;">
             Left Navigation
         </div>
     </div>
 
-    <div ui-view="main" class="main-contents striped" style="padding: 3px;">
+    <div ui-view="main" class="main-contents view-panel" style="padding: 3px;">
         Main Contents
     </div>
 
     <div class="bottom-spacer">
         <div class="mask"></div>
-        <div class="striped" style="padding: 3px; text-align:center;">
+        <div class="view-panel" style="padding: 3px; text-align:center;">
             Footer
         </div>
     </div>
