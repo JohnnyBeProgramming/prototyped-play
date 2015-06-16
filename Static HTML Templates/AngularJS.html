@@ -1,64 +1,39 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
+    <base href="/">
+    <meta charset="utf-8" />
     <title>Prototyped Sandbox</title>
-    <link rel="stylesheet" href="assets/css/app.css" />
+    <link href="./assets/css/app.css" rel="stylesheet" />
 </head>
-<body ng-app="myApp">
+<body>
 
     <div class="docked-container"
-         ng-class="{ 'docked-full':!docked, 'docked-left':docked }"
-         ng-init="docked = true">
-
-        <!-- Top Navigation -->
-        <div class="anim-fade">
-            <div class="view-panel view-toolbar left">
-                Top Navigation ( Left )
-            </div>
-            <div class="view-panel view-toolbar right">
-                Top Navigation ( Right )
+         ng-init="docker = { enabled: true }"
+         ng-class="{ 'docked-full':docker.enabled === false, 'docked-left':docker.enabled === true }">
+        <!-- directive: docked-top -->
+        <div docked:icon>
+            <div class="top-spacer">
+                <span class="anim-slide">
+                    <a><i class="fa fa-gear faa-spin animated" style="font-size: xx-large;"></i></a>
+                </span>
             </div>
         </div>
-        <div class="top-spacer">
-            <div class="mask noselect anim-fade"></div>
-            <span class="anim-slide">
-                <a href="" ng-click="docked = !docked">
-                    <i class="fa fa-globe" style="font-size: xx-large;"></i>
-                </a>
-            </span>
-        </div>
-
-
-        <!-- Left Navigation -->
-        <div class="vertical-spacer right view-panel anim-fade">
-            <div class="mask noselect"></div>
-            <div class="left-container">
-                Left Navigation
-            </div>
-        </div>
-
-
-        <!-- Main Contents -->
-        <div class="main-contents view-panel anim-fade">
-
-        </div>
-
-
-        <!-- Footer -->
-        <div class="bottom-spacer anim-fade">
-            <div class="mask noselect"></div>
-            <div class="view-panel bottom-container">
-                Footer
-            </div>
-        </div>
-
+        <!-- directive: docked-left-nav -->
+        <!-- directive: docked-main -->
+        <!-- directive: docked-footer -->
     </div>
 
     <!-- Load AngularJS and all the required libraries (exclude IE < 10 from the party) -->
     <!--[if gt IE 9]><!-->
-    <script src="assets/lib/vend/jquery/jquery-2.1.3.min.js"></script>
-    <script src="assets/lib/vend/angular/angular.js"></script>
-    <script src="assets/lib/app.js"></script>
+    <script src="./assets/lib/vend/jquery/jquery-2.1.3.min.js"></script>
+    <script src="./assets/lib/vend/angular/angular.js"></script>
+    <script src="./assets/lib/app.js"></script>
     <!--<![endif]-->
+    <script>
+        $(function () {
+            angular.bootstrap($('.docked-container'), ['myApp']);
+        });
+    </script>
 </body>
 </html>
