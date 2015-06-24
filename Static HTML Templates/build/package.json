@@ -1,0 +1,27 @@
+{
+  "version": "0.0.1",
+  "name": "prototyped-html-packager",
+  "author": "author",
+  "private": true,
+  "scripts": {
+    "prestart": "start chrome http://localhost:4200/build/gen/",
+    "start": "call broccoli serve"
+  },
+  "globals": {
+    "broccoli-cli": "^0.0.1"
+  },
+  "dependencies": {
+    "broccoli-template-builder": "0.0.4"
+  },
+  "devDependencies": {
+    "broccoli": "^0.13.3",
+    "broccoli-concat": "^0.0.12",
+    "broccoli-env": "^0.0.1",
+    "broccoli-es6-concatenator": "^0.1.11",
+    "broccoli-less-single": "^0.4.0",
+    "broccoli-merge-trees": "^0.2.1",
+    "broccoli-static-compiler": "^0.2.1",
+    "broccoli-typescript": "^0.4.0",
+    "broccoli-uglify-js": "^0.1.3"
+  }
+}
