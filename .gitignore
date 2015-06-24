@@ -52,3 +52,5 @@ Temporary Items
 **/**/*.suo
 **/**/*.user
 **/**/*.log
+/Static HTML Templates/build/tmp
+/Static HTML Templates/build/node_modules

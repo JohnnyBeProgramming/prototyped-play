@@ -3,7 +3,7 @@ var compileLess = require('broccoli-less-single');
 var concatenate = require('broccoli-concat');
 var mergeTrees = require('broccoli-merge-trees');
 var uglifyJs = require('broccoli-uglify-js');
-
+var stew = require('broccoli-stew');
 var app = '../';
 
 /** 
@@ -13,21 +13,23 @@ var app = '../';
 var appHtml = pickFiles(app, {
     srcDir: './',
     files: [
-        'AngularJS.html',
-        'Template.html'
+        '**/*.html',
     ],
-    destDir: '/build/gen'
+    destDir: '/'
 });
 
-/**
- * compile all of the SASS in the project /resources folder into 
- * a single app.css file in the build production/resources folder
- */
-var appCss = compileLess(app, 'assets/css/app.less', '/build/gen/app.css', {
-    paths: [
-        '.',
-    ]
+/*
+var appCss = compileLess(app, 'assets/css/app.less', 'assets/css/app.css', {
+    paths: ['/assets/css']
 });
+ */
+var appCss = pickFiles(app, {
+    srcDir: '/assets/css/',
+    files: [
+        '**/*.css',
+    ],
+    destDir: '/assets/css/'
+})
 
 /**
  * concatenate and compress all of our JavaScript files in 
@@ -36,15 +38,20 @@ var appCss = compileLess(app, 'assets/css/app.less', '/build/gen/app.css', {
  */
 var appJs = concatenate(app, {
     inputFiles: [
+        'assets/lib/vend/jquery/jquery-2.1.3.min.js',
+        'assets/lib/vend/angular/angular.js',
+        'assets/lib/vend/angular/angular-animate.js',
         'assets/lib/app.js',
     ],
-    outputFile: '/build/gen/app.js',
+    outputFile: '/assets/lib/app.js',
     header: '/** Dont feed the trolls... **/'
 });
+/*
 appJs = uglifyJs(appJs, {
     compress: true
 });
-
-
+*/
 // merge HTML, JavaScript and CSS trees into a single tree and export it
-module.exports = mergeTrees([appHtml, appJs, appCss]);
+var appTree = mergeTrees([appHtml, appJs, appCss]);
+module.exports = appTree;
+//module.exports = stew.rm(appTree, '/build/**');
