@@ -98,7 +98,7 @@ var HtmlCompiler = {
                     default:
                         var contents = HtmlCompiler.expandElem(item);
                         output = {
-                            type: 'text',
+                            type: 'html',
                             text: contents,
                         };
                         break;
@@ -172,6 +172,7 @@ var HtmlCompiler = {
             }
         }
         return newNodes;
-    }
+    },
+
 };
 module.exports = HtmlCompiler;

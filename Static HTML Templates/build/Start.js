@@ -3,17 +3,17 @@
 /* -------------------------------------------------------------------------------
 Example of a custom HTTP Server
 ------------------------------------------------------------------------------- */
-var templHtml = 'assets/Linker.template.html';
-var templPath = 'assets/Linker.template.js';
-var encoderPath = 'assets/lib/lzwCompressor.js';
+var templHtml = 'scripts/Linker.template.html';
+var templPath = 'scripts/Linker.template.js';
+var encoderPath = 'scripts/lib/lzwCompressor.js';
 var basePath = '../';
-var outPath = 'gen/';
+var outPath = 'compiled/';
 
 var fs = require('fs');
 var path = require('path');
-var compiler = require('./assets/HtmlCompiler.js');
-var lzwCompressor = require('./assets/lib/lzwCompressor.js');
-var Base64 = require('./assets/lib/Base64.js');
+var compiler = require('./scripts/HtmlCompiler.js');
+var lzwCompressor = require('./scripts/lib/lzwCompressor.js');
+var Base64 = require('./scripts/lib/Base64.js');
 
 function InspectFiles(file, contents) {
     return compiler
@@ -24,6 +24,8 @@ function InspectFiles(file, contents) {
 }
 
 function GenerateFile(filename, output) {
+    console.log('   + ' + filename);
+
     var contents = JSON.stringify(output, null, 4);
     var targetPath = outPath || process.cwd();
     if (!fs.existsSync(targetPath)) {
@@ -31,7 +33,6 @@ function GenerateFile(filename, output) {
     }
     var targetJSON = path.join(targetPath, filename + '.json');
     fs.writeFileSync(targetJSON, contents);
-    console.log(' - ' + targetJSON);
 
     var targetScript = path.join(targetPath, filename + '.link.js');
     return GenerateScript(targetScript, output);
@@ -40,7 +41,6 @@ function GenerateFile(filename, output) {
 function GenerateScript(filename, output) {
     var q = require('q');
     var deferred = q.defer();
-
 
     var srcPath = templPath;
     var requires = fs.readFileSync(encoderPath, 'utf-8').replace(/^\uFEFF/, '');
@@ -52,6 +52,20 @@ function GenerateScript(filename, output) {
         .replace('/*{1}*/', requires);
     if (result) {
         var fileContents = result;
+        try {
+            var UglifyJS = require("uglify-js");
+            var minified = UglifyJS.minify(fileContents, {
+                fromString: true,
+                mangle: {},
+                warnings: true,
+                compress: {
+                    pure_funcs: ['console.debug']
+                }
+            });
+            fileContents = minified.code;
+        } catch (ex) {
+            console.log(' - Error: ' + ex.message);
+        }
         fs.writeFile(filename, fileContents, function (err) {
             if (err) {
                 deferred.reject(new Error(err));
@@ -75,6 +89,7 @@ try {
     var promises = [];
     var targetPath = path.join(process.cwd(), basePath);
     console.log(' - Searching: ', targetPath);
+
     var files = fs.readdirSync(targetPath);
     if (files) {
         files.sort();
@@ -104,7 +119,7 @@ try {
         var links = '';
         for (var filename in targets) {
             var jscript = targets[filename];
-            links += '<li> &raquo; <a href="javascript:' + jscript + '">' + filename + '</a></li>';
+            links += '<li><a class="btn btn-lg btn-default pull-left" style="width: 200px; margin-right: 8px;" href=\'javascript:' + jscript + '\'>' + filename.replace(/(\.html)$/i,'') + '</a></li>';
         }
         var placeholder = '<li><a href="javascript:void()">Placeholder</a></li>';
         var result = contents.replace(placeholder, links).replace(/( *\r\n *)/g, '');

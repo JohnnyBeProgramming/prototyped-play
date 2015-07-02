@@ -7,7 +7,6 @@
 
             /*{1}*/
 
-
             if (module.exports) {
                 encoders.lzw = module.exports;
             }
@@ -18,9 +17,14 @@
             if (payload) {
                 var decoded = encoders.Base64.decode(payload);
                 var jsonObj = JSON.parse(decoded);
-                console.log(' - Load:', jsonObj);
+
+                console.info(' - Unpacking:', jsonObj);
             }
-        }
+        },
+        title: function(desc){
+        },
+        meta: function (attrs) {
+        },
     };
 
     ctx.init();
