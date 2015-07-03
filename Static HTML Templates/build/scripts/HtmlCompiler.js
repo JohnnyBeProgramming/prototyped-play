@@ -3,8 +3,13 @@ var HtmlCompiler = {
     opts: {
         prefix: 'ctx',
         mergeGroups: true,
+        minifyScripts: true,
         ignoreComments: false,
         trimWhiteSpace: true,
+        excludeStatements: [
+            'console.debug',
+            //'console.log',
+        ],
     },
 
     gen: function (file, contents, callback) {

@@ -4,8 +4,9 @@
   "author": "author",
   "private": true,
   "scripts": {
-    "prestart": "node Start.js",
-    "xstart": "start chrome http://localhost:4200 & call broccoli serve"
+    "prestart": "node Compiler.js",
+    "xstart": "start chrome http://localhost:4200 & call broccoli serve",
+    "poststart": "start chrome \"%CD%\\compiled\\index.html\""
   },
   "globals": {
     "broccoli-cli": "^0.0.1"
