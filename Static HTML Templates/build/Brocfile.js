@@ -2,6 +2,7 @@ var pickFiles = require('broccoli-static-compiler');
 var compileLess = require('broccoli-less-single');
 var concatenate = require('broccoli-concat');
 var mergeTrees = require('broccoli-merge-trees');
+var ngTemplCache = require('broccoli-ng-templatecache');
 var uglifyJs = require('broccoli-uglify-js');
 var stew = require('broccoli-stew');
 var app = '../';
@@ -17,6 +18,15 @@ var appHtml = pickFiles(app, {
     ],
     destDir: '/'
 });
+
+// Generate ng Templates
+var templates = new ngTemplCache([appHtml], {
+    module: 'myApp.templates',
+    outputFile: 'xxx.resx.js', // ./assets/lib/app.js
+    standalone: true,
+    prefix: './',
+});
+console.log(' - templates: ', templates);
 
 /*
 var appCss = compileLess(app, 'assets/css/app.less', 'assets/css/app.css', {
@@ -52,6 +62,6 @@ appJs = uglifyJs(appJs, {
 });
 */
 // merge HTML, JavaScript and CSS trees into a single tree and export it
-var appTree = mergeTrees([appHtml, appJs, appCss]);
+var appTree = mergeTrees([appHtml, appJs, appCss, templates]);
 module.exports = appTree;
 //module.exports = stew.rm(appTree, '/build/**');

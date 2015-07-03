@@ -125,6 +125,13 @@
             node.innerText = ctx.val
             document.body.appendChild(node);
         }
+        ctx.script = function (parentElem, callback) {
+            var contents = ctx.val;
+            var srcipt = document.createElement('script');
+            srcipt.textContent = contents;
+            var res = (parentElem || document.body).appendChild(srcipt);
+            if (callback) callback(res, parentElem);            
+        }
         ctx.inject = function (callback, async) {
             var url = ctx.val;
             if (/\.js/.test(url)) {
@@ -150,6 +157,17 @@
 
             return ctx;
         }
+        ctx.hashCode = function () {
+            var val = ctx.val;
+            var hash = 0, i, chr, len;
+            if (val.length == 0) return hash;
+            for (i = 0, len = val.length; i < len; i++) {
+                chr = val.charCodeAt(i);
+                hash = ((hash << 5) - hash) + chr;
+                hash |= 0; // Convert to 32bit integer
+            }
+            return hash;
+        };
         ctx.isReady = true;
 
         return ctx;

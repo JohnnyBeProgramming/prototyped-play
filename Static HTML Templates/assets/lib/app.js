@@ -1,5 +1,34 @@
 ﻿angular.module('myApp', [
 ])
+    .constant('myAppState', {
+        lastError: null,
+    })
+    .factory('$exceptionHandler', ['myAppState', function (myAppState) {
+        return function errorCatcherHandler(exception, cause) {
+            var err = new Error('Angular exception');
+            myAppState.lastError = err;
+            console.warn(err);
+        };
+    }])
+    .factory('errorHttpInterceptor', ['$q', 'myAppState', function ($q, myAppState) {
+        return {
+            responseError: function responseError(rejection) {
+                var err = new Error('HTTP response error');
+                myAppState.lastError = err;
+                console.warn(err);
+                /*{
+                    extra: {
+                        config: rejection.config,
+                        status: rejection.status
+                    }
+                }*/
+                return $q.reject(rejection);
+            }
+        };
+    }])
+    .config(['$httpProvider', function ($httpProvider) {
+        $httpProvider.interceptors.push('errorHttpInterceptor');
+    }])
     .directive('dockedContainer', function () {
         return {
             restrict: 'AEM',

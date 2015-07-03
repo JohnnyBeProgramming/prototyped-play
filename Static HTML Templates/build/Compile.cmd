@@ -1,2 +1,2 @@
 @echo off
-npm start
+call npm start --silent

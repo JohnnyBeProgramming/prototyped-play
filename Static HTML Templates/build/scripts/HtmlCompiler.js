@@ -1,19 +1,30 @@
-﻿var toHtml = require('htmlparser-to-html');
+﻿var path = require('path');
+var fs = require('fs');
+var q = require('q');
+
+var debug = true;
+var toHtml = require('htmlparser-to-html');
 var HtmlCompiler = {
     opts: {
-        prefix: 'ctx',
+        base: './',
+        debug: false,
+        prefix: '$__$',
+        clearHtml: false,
         mergeGroups: true,
         minifyScripts: true,
+        scriptElements: true,
         ignoreComments: false,
+        compressPrefix: null,
+        compressContents: true,
         trimWhiteSpace: true,
         excludeStatements: [
             'console.debug',
-            //'console.log',
-        ],
+        ].concat(!debug ? [
+            'console.log',
+        ] : []),
     },
 
     gen: function (file, contents, callback) {
-        var q = require('q');
         var deferred = q.defer();
 
         // Strip non-html prefix
@@ -31,16 +42,17 @@ var HtmlCompiler = {
                     lang: html.attribs.lang,
                     head: [],
                     body: [],
+                    clean: HtmlCompiler.opts.clearHtml,
                 };
 
                 html.children.forEach(function (child) {
                     if (child.type == 'tag') {
                         switch (child.name) {
                             case 'head':
-                                output.head = HtmlCompiler.inspectGroup(child);
+                                output.head = HtmlCompiler.inspectGroup(child, 'document.head');
                                 break;
                             case 'body':
-                                output.body = HtmlCompiler.inspectGroup(child);
+                                output.body = HtmlCompiler.inspectGroup(child, 'document.body');
                                 break;
                         }
                     }
@@ -59,7 +71,7 @@ var HtmlCompiler = {
         return deferred.promise;
     },
 
-    expandElem: function (item) {        
+    expandElem: function (item) {
         return toHtml(item);
     },
 
@@ -77,27 +89,42 @@ var HtmlCompiler = {
                         }
                         break;
                     case 'title':
+                        if (!item.children.length) break;
                         output = {
                             type: 'script',
-                            text: 'ctx.title(' + JSON.stringify(item.data) + ');',
+                            text: HtmlCompiler.opts.prefix + '.title(' + JSON.stringify(item.children[0].data) + ');',
                         };
                         break;
                     case 'meta':
                         output = {
                             type: 'script',
-                            text: 'ctx.meta(' + JSON.stringify(item.attribs) + ');',
+                            text: HtmlCompiler.opts.prefix + '.meta(' + JSON.stringify(item.attribs) + ');',
                         };
                         break;
                     case 'link':
+                        var type = 'link';
+                        var data = item.attribs;
+                        var isUrl = item.attribs && item.attribs.href;
+                        if (isUrl && item.attribs.rel == 'stylesheet') {
+                            // Try and fetch local file
+                            var relPath = item.attribs.href;
+                            var filePath = path.join(HtmlCompiler.opts.base, relPath);
+                            if (fs.existsSync(filePath)) {
+                                // Do something
+                                var buffer = fs.readFileSync(filePath, 'utf8');
+                                isUrl = false;
+                                data = buffer;
+                            }
+                            type = 'style';
+                        }
+
+                        if (!isUrl && data) {
+                            // ToDo: Encode the script...
+                        }
+
                         output = {
                             type: 'script',
-                            text: 'ctx.link(' + JSON.stringify(item.attribs) + ');',
-                        };
-                        break;
-                    case 'script':
-                        output = {
-                            type: 'script',
-                            text: 'ctx.script("' + JSON.stringify(item) + '");',
+                            text: HtmlCompiler.opts.prefix + '.' + type + '(' + JSON.stringify(data) + ');',
                         };
                         break;
                     default:
@@ -110,17 +137,23 @@ var HtmlCompiler = {
                 }
                 break;
             case 'script':
-                if (item.attribs && item.attribs.src) {
-                    output = {
-                        type: 'script',
-                        text: 'ctx.scriptUrl("' + item.attribs.src + '");',
-                    };
-                } else if (item.data) {
-                    output = {
-                        type: 'script',
-                        text: 'ctx.scriptBody("' + item.data + '");',
-                    };
+                var isUrl = item.attribs && item.attribs.src;
+                var data = isUrl ? item.attribs.src : item.children[0].data;
+                if (isUrl) {
+                    // Try and fetch local file
+                    var filePath = path.join(HtmlCompiler.opts.base, data);
+                    if (fs.existsSync(filePath)) {
+                        // Do something
+                        var buffer = fs.readFileSync(filePath, 'utf8');
+                        isUrl = false;
+                        data = buffer;
+                    }
                 }
+
+                output = {
+                    type: 'script',
+                    text: HtmlCompiler.opts.prefix + '.script(' + JSON.stringify(data) + ', ' + JSON.stringify(isUrl) + ');',
+                };
                 break;
             case 'text':
                 // Check if not empty?
@@ -147,7 +180,81 @@ var HtmlCompiler = {
         return output;
     },
 
-    inspectGroup: function (domElem) {
+    scriptElems: function (output, parentIdent) {
+        var list = [];
+        if (output && output.length) {
+            output.forEach(function (item) {
+                // Check if the tag can be converted to a script
+                switch (item.type) {
+                    case 'comment':
+                        if (!HtmlCompiler.opts.ignoreComments) {
+                            item = {
+                                type: 'script',
+                                text: HtmlCompiler.opts.prefix + '.comment(' + parentIdent + ',' + JSON.stringify(item.text) + ');',
+                            };
+                        } else {
+                            // Remove comments
+                            item = null;
+                        }
+                        break;
+                    case 'html':
+                        item = {
+                            type: 'script',
+                            text: HtmlCompiler.opts.prefix + '.html(' + parentIdent + ',' + JSON.stringify(item.text) + ');',
+                        };
+                        break;
+                }
+
+                if (item) {
+                    list.push(item);
+                }
+            });
+        }
+        return list;
+    },
+
+    hashCode: function (val) {
+        var hash = 0, i, chr, len;
+        if (val.length == 0) return hash;
+        for (i = 0, len = val.length; i < len; i++) {
+            chr = val.charCodeAt(i);
+            hash = ((hash << 5) - hash) + chr;
+            hash |= 0; // Convert to 32bit integer
+        }
+        return hash;
+    },
+
+    compressScripts: function (output, parentIdent) {
+        // ToDo: Make Compression work...
+        return output;
+
+        var list = [];
+        if (output && output.length) {
+            output.forEach(function (item) {
+                if (!item.text) return;
+                if (item.type == 'script') {
+                    var md5 = require('./lib/MD5.js');
+                    var lzwCompressor = require('./lib/lzwCompressor.js');
+                    var pre = (HtmlCompiler.opts.compressPrefix || '');
+                    if (pre == '') {
+                        var payload = item.text.replace(/( *\r\n *)/g, '');
+                        var checksum = md5(payload);
+                        pre += '/*' + item.text.length + '::' + checksum + '*/';
+                    }
+                    var str = pre + item.text;
+                    var enc = lzwCompressor.encode(str);
+                    item.text = '"' + enc + '"' + '[\'\']().decompress().script("' + parentIdent + '")';
+                }
+
+                if (item) {
+                    list.push(item);
+                }
+            });
+        }
+        return list;
+    },
+
+    inspectGroup: function (domElem, parentIdent) {
         var result = [];
         if (domElem.children) {
             domElem.children.forEach(function (item) {
@@ -157,8 +264,14 @@ var HtmlCompiler = {
                 }
             });
         }
+        if (HtmlCompiler.opts.scriptElements) {
+            result = HtmlCompiler.scriptElems(result, parentIdent);
+        }
         if (HtmlCompiler.opts.mergeGroups) {
             result = HtmlCompiler.mergeGroups(result);
+        }
+        if (HtmlCompiler.opts.compressContents) {
+            result = HtmlCompiler.compressScripts(result, parentIdent);
         }
         return result;
     },

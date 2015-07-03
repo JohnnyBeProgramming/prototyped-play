@@ -3,8 +3,8 @@
 <head>
     <base href="/">
     <meta charset="utf-8" />
-    <title>Prototyped Sandbox</title>
-    <link href="./assets/css/app.css" rel="stylesheet" />    
+    <title>My Application</title>
+    <link href="./assets/css/app.min.css" rel="stylesheet" />
 </head>
 <body>
 
@@ -24,14 +24,17 @@
         <!-- directive: docked-footer -->
     </div>
 
-    <!--Load all the required libraries (exclude IE < 10 from the party) -->
     <!--[if gt IE 9]><!-->
+    <!--Load all the required libraries (exclude IE < 10 from the party) -->
     <script src="./assets/lib/vend/jquery/jquery-2.1.3.min.js"></script>
     <script src="./assets/lib/vend/angular/angular.js"></script>
     <script src="./assets/lib/app.js"></script>
+    <script src="./assets/lib/app.tpl.js"></script>
     <script>
         $(function () {
-            angular.bootstrap($('.docked-container'), ['myApp']);
+            angular.bootstrap($('.docked-container'), [
+                'myApp',
+            ]);
         });
     </script>
     <!--<![endif]-->

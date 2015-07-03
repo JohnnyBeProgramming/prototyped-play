@@ -1,13 +1,12 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Prototyped Sandbox</title>
+    <title>Application Template</title>
     <link rel="stylesheet" href="assets/css/app.css" />
 </head>
 <body>
 
-    <div ng-app 
-         class="docked-container"
+    <div class="docked-container ng-cloak"
          ng-class="{ 'docked-full':!docked, 'docked-left':docked }"
          ng-init="docked = true">
 
@@ -55,10 +54,16 @@
 
     </div>
 
-    <!-- Load AngularJS and all the required libraries (exclude IE < 10 from the party) -->
     <!--[if gt IE 9]><!-->
+    <!--Load all the required libraries (exclude IE < 10 from the party) -->
     <script src="assets/lib/vend/jquery/jquery-2.1.3.min.js"></script>
-    <script src="assets/lib/vend/angular/angular.js"></script>    
+    <script src="assets/lib/vend/angular/angular.js"></script>
+    <script>
+        $(function () {
+            angular.module('myApp', []);
+            angular.bootstrap($('.docked-container'), ['myApp']);
+        });
+    </script>
     <!--<![endif]-->
 
 </body>

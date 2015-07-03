@@ -7,7 +7,6 @@ var templHtml = 'scripts/Linker.template.html';
 var templPath = 'scripts/Linker.template.js';
 var encoderPath = 'scripts/lib/Base64.js';
 var protoStrPath = 'scripts/lib/StringPrototyped.js';
-var basePath = '../';
 var outPath = 'compiled/';
 
 var fs = require('fs');
@@ -15,6 +14,7 @@ var path = require('path');
 var compiler = require('./scripts/HtmlCompiler.js');
 var lzwCompressor = require('./scripts/lib/lzwCompressor.js');
 var Base64 = require('./scripts/lib/Base64.js');
+var basePath = compiler.opts.base = '../';
 
 function InspectFiles(file, contents) {
     return compiler
@@ -64,6 +64,7 @@ function GenerateScript(filename, output) {
         .replace('/*{0}*/', encoded)
         .replace('/*{1}*/', requires)
         .replace('/*{2}*/', protoStr)
+        .replace(/___ctx___/g, compiler.opts.prefix)
 
     var fileContents = result;
     if (result) {
@@ -74,13 +75,13 @@ function GenerateScript(filename, output) {
                 opts = {
                     fromString: true,
                     mangle: {},
-                    warnings: true,
+                    warnings: false,
                     compress: {
                         pure_funcs: compiler.opts.excludeStatements,
                     }
                 };
             } else {
-                opts = {                    
+                opts = {
                     fromString: true,
                     mangle: false,
                     compress: false
@@ -143,22 +144,38 @@ try {
 
     var q = require('q');
     q.all(promises).then(function () {
+        console.log('-------------------------------------------------------------------------------');
         console.log(' - Generating Index...');
+
         var builderFile = outPath + 'index.html';
         var contents = fs.readFileSync(templHtml, 'utf-8');
         var links = '';
+        var list = [];
         for (var filename in targets) {
-            var jscript = targets[filename];
-            links += '<li><a class="btn btn-lg btn-default pull-left" style="width: 200px; margin-right: 8px;" href=\'javascript:' + jscript + '\'>' + filename.replace(/(\.html)$/i, '') + '</a></li>';
+            list.push(filename);
         }
+        list.sort().forEach(function (filename) {
+            var jscript = targets[filename];
+            var style = 'width: 200px; margin-right: 8px;';
+            var css = 'btn btn-lg btn-default pull-left';
+            if (jscript) {
+                jscript
+                    .replace(/(\/\*[\w\'\s\r\n\*]*\*\/)|(\/\/[\w\s\']*)|(\<![\-\-\s\w\>\/]*\>)/g, '')
+                    .replace(/( *\r\n *)/g, '')
+
+                links += '<li><a class="' + css + '" style="' + style + '" href=\'javascript:' + jscript + '\'>'
+                       + filename.replace(/(\.html)$/i, '')
+                       + '</a></li>';
+            }
+        });
+
         var placeholder = '<li><a href="javascript:void()">Placeholder</a></li>';
         var result = contents
                         .replace(placeholder, links)
-                        .replace(/(\/\*[\w\'\s\r\n\*]*\*\/)|(\/\/[\w\s\']*)|(\<![\-\-\s\w\>\/]*\>)/g, '')
                         .replace(/( *\r\n *)/g, '');
 
         fs.writeFileSync(builderFile, result);
-        console.log('-------------------------------------------------------------------------------');
+
         console.log(' - Done.');
         console.log('-------------------------------------------------------------------------------');
     });
