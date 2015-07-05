@@ -27,6 +27,7 @@ body {
     .view-panel {
         color: silver;
         background-color: rgba(255,255,255,0.95);
+        //pointer-events: auto;
     }
 
     .view-toolbar {
@@ -50,7 +51,7 @@ body {
         width: 100%;
         margin: 32px auto 0;
         position: absolute;
-        z-index: 1000;
+        z-index: 2000;
 
         .mask {
             overflow: hidden;
@@ -78,7 +79,8 @@ body {
             border-radius: 100%;
             box-shadow: 0 2px 4px #999;
             background: white;
-            z-index: 2000;
+            z-index: 3000;
+            pointer-events: auto;
 
             i {
                 top: 4px;
@@ -92,7 +94,7 @@ body {
                 line-height: 40px;
                 font-style: normal;
                 color: #999;
-                z-index: 1000;
+                z-index: 2000;
             }
         }
     }
@@ -153,7 +155,7 @@ body {
         padding: 3px;
         position: absolute;
         overflow: auto;
-        z-index: 999;
+        z-index: 1999;
     }
 
     .bottom-spacer {
@@ -208,6 +210,10 @@ body {
     }
 
     .docked-left {
+        &.docked-container {
+            pointer-events: auto;
+        }
+
         .anim-fade {
             opacity: 0.0;
             -webkit-animation: fade-in 0.5s forwards;
@@ -253,6 +259,10 @@ body {
     }
 
     .docked-full {
+        &.docked-container {
+            pointer-events: none;
+        }
+
         .anim-fade {
             opacity: 1.0;
             -webkit-animation: fade-out 0.5s forwards;

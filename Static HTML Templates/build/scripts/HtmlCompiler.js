@@ -1,4 +1,5 @@
-﻿var path = require('path');
+﻿var sp = require('./lib/StringPrototyped.js');
+var path = require('path');
 var fs = require('fs');
 var q = require('q');
 
@@ -15,7 +16,7 @@ var HtmlCompiler = {
         scriptElements: true,
         ignoreComments: false,
         compressPrefix: null,
-        compressContents: true,
+        compressContents: false,
         trimWhiteSpace: true,
         excludeStatements: [
             'console.debug',
@@ -23,7 +24,7 @@ var HtmlCompiler = {
             'console.log',
         ] : []),
     },
-
+    spx: new sp(),
     gen: function (file, contents, callback) {
         var deferred = q.defer();
 
@@ -75,7 +76,7 @@ var HtmlCompiler = {
         return toHtml(item);
     },
 
-    parseElem: function (item) {
+    parseElem: function (item, parentIdent) {
         var output = null;
         switch (item.type) {
             case 'tag':
@@ -124,7 +125,7 @@ var HtmlCompiler = {
 
                         output = {
                             type: 'script',
-                            text: HtmlCompiler.opts.prefix + '.' + type + '(' + JSON.stringify(data) + ');',
+                            text: HtmlCompiler.opts.prefix + '.' + type + '(' + JSON.stringify(data)  + ');',
                         };
                         break;
                     default:
@@ -135,6 +136,12 @@ var HtmlCompiler = {
                         };
                         break;
                 }
+                break;
+            case 'style':
+                output = {
+                    type: 'script',
+                    text: HtmlCompiler.opts.prefix + '.style(' + JSON.stringify(item.text) + ', ' + parentIdent + ');',
+                };
                 break;
             case 'script':
                 var isUrl = item.attribs && item.attribs.src;
@@ -164,6 +171,7 @@ var HtmlCompiler = {
                     };
                 }
                 break;
+
             case 'comment':
                 // Disable comments?
                 if (!HtmlCompiler.opts.ignoreComments) {
@@ -226,23 +234,19 @@ var HtmlCompiler = {
 
     compressScripts: function (output, parentIdent) {
         // ToDo: Make Compression work...
-        return output;
-
         var list = [];
         if (output && output.length) {
             output.forEach(function (item) {
                 if (!item.text) return;
                 if (item.type == 'script') {
-                    var md5 = require('./lib/MD5.js');
-                    var lzwCompressor = require('./lib/lzwCompressor.js');
                     var pre = (HtmlCompiler.opts.compressPrefix || '');
                     if (pre == '') {
                         var payload = item.text.replace(/( *\r\n *)/g, '');
-                        var checksum = md5(payload);
+                        var checksum = spx.encoders.md5(payload);
                         pre += '/*' + item.text.length + '::' + checksum + '*/';
                     }
                     var str = pre + item.text;
-                    var enc = lzwCompressor.encode(str);
+                    var enc = HtmlCompiler.spx.encoders.lzw.encode(str);
                     item.text = '"' + enc + '"' + '[\'\']().decompress().script("' + parentIdent + '")';
                 }
 
@@ -258,7 +262,7 @@ var HtmlCompiler = {
         var result = [];
         if (domElem.children) {
             domElem.children.forEach(function (item) {
-                var output = HtmlCompiler.parseElem(item);
+                var output = HtmlCompiler.parseElem(item, parentIdent);
                 if (output) {
                     result.push(output);
                 }

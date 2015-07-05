@@ -41,7 +41,7 @@ body .top-spacer {
   width: 100%;
   margin: 32px auto 0;
   position: absolute;
-  z-index: 1000;
+  z-index: 2000;
 }
 body .top-spacer .mask {
   overflow: hidden;
@@ -67,7 +67,8 @@ body .top-spacer span {
   border-radius: 100%;
   box-shadow: 0 2px 4px #999;
   background: white;
-  z-index: 2000;
+  z-index: 3000;
+  pointer-events: auto;
 }
 body .top-spacer span i {
   top: 4px;
@@ -81,7 +82,7 @@ body .top-spacer span i {
   line-height: 40px;
   font-style: normal;
   color: #999;
-  z-index: 1000;
+  z-index: 2000;
 }
 body .vertical-spacer {
   width: 200px;
@@ -131,7 +132,7 @@ body .main-contents {
   padding: 3px;
   position: absolute;
   overflow: auto;
-  z-index: 999;
+  z-index: 1999;
 }
 body .bottom-spacer {
   bottom: 0;
@@ -177,6 +178,9 @@ body .docked-container .anim-slide {
 body .docked-container .anim-fade {
   opacity: 0.0;
 }
+body .docked-left.docked-container {
+  pointer-events: auto;
+}
 body .docked-left .anim-fade {
   opacity: 0.0;
   -webkit-animation: fade-in 0.5s forwards;
@@ -212,6 +216,9 @@ body .docked-left .anim-slide:hover {
     left: 50%;
     opacity: 1.0;
   }
+}
+body .docked-full.docked-container {
+  pointer-events: none;
 }
 body .docked-full .anim-fade {
   opacity: 1.0;

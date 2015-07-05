@@ -13,22 +13,21 @@
                     };
                 }
 
-                // Include: Base64 Encoder Utils
+                // Include: String Prototype
                 /*{1}*/
 
                 // Link included module
                 if (module.exports) {
-                    window.Base64 = encoders.Base64 = module.exports;
+                    encoders.sp = module.exports;
+
+                    var spx = new encoders.sp();
+                    encoders.lzw = spx.encoders.lwz;
+                    encoders.md5 = spx.encoders.md5;
+                    encoders.base64 = spx.encoders.base64;
                     module.exports = null;
                 }
-
-                // Include: String Prototype
-                /*{2}*/
-
                 // Link included module
                 if (module.exports) {
-                    encoders.sp = module.exports;
-                    encoders.lzw = new encoders.sp().encoders.lwz;
                     module.exports = null;
                 }
             },
@@ -124,7 +123,7 @@
                     var success = true;
                     try {
                         // Decode and parse contents of the payload
-                        var decoded = encoders.Base64.decode(payload);
+                        var decoded = encoders.base64.decode(payload);
                         var htmlObj = JSON.parse(decoded);
 
                         if (htmlObj.clean) {
