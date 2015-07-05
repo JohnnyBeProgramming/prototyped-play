@@ -1,4 +1,4 @@
-﻿var sp = require('./lib/StringPrototyped.js');
+﻿var sp = require('../../assets/lib/proto/StringPrototyped.js');
 var path = require('path');
 var fs = require('fs');
 var q = require('q');

@@ -6,12 +6,11 @@ Example of a custom HTTP Server
 var outPath = 'compiled/';
 var templHtml = 'scripts/Linker.template.html';
 var templPathJS = 'scripts/Linker.template.js';
-var protoStrPath = './scripts/lib/StringPrototyped.js';
+var protoStrPath = '../assets/lib/proto/StringPrototyped.js';
 
 var q = require('q');
 var fs = require('fs');
 var path = require('path');
-var sp = require(protoStrPath);
 var compiler = require('./scripts/HtmlCompiler.js');
 var basePath = compiler.opts.base = '../';
 
@@ -47,49 +46,18 @@ function GenerateScript(filename, output) {
     var deferred = q.defer();
 
     var targetPath = path.join((outPath || process.cwd()), 'script/');
-    var targetScript = path.join(targetPath, filename + '.link.js');
     if (!fs.existsSync(targetPath)) {
         fs.mkdirSync(targetPath);
     }
 
     try {
+        // Parse the contents and resolve promise
         var fileContents = JSON.stringify(output);
-
-        // ================================================================================
-        //console.log('   + [INPUT]:', fileContents.length);
-        if (fileContents && templPathJS) {
-            var contents = fs.readFileSync(templPathJS, 'utf-8').replace(/^\uFEFF/, '');
-            var protoStr = fs.readFileSync(protoStrPath, 'utf-8').replace(/^\uFEFF/, '');
-            var jsonEnc = compiler.spx.encoders.base64.encode(fileContents);
-            var encoded = '\'' + jsonEnc + '\'';
-
-            fileContents = !contents ? contents : contents
-                .replace(/___ctx___/g, compiler.opts.prefix)
-                .replace('/*{0}*/', encoded)
-                .replace('/*{1}*/', protoStr)
-                .replace('/*{2}*/', '')
-        }
-        //console.log('   + [OUTPUT]:', fileContents.length);
-        // ================================================================================
-
-        if (fileContents && compiler.opts.minifyScripts) {
-            fileContents = GenerateMinified(fileContents);
-        }
-
-        // ================================================================================
-        // Finally
         if (fileContents) {
-            fs.writeFile(targetScript, fileContents, function (err) {
-                if (err) {
-                    deferred.reject(new Error(err));
-                }
-                deferred.resolve(fileContents);
-            });
+            deferred.resolve(fileContents);
         } else {
             deferred.reject(new Error('No Result'));
         }
-        // ================================================================================
-
 
     } catch (ex) {
         deferred.reject(ex);
@@ -155,12 +123,66 @@ try {
                 var srcPath = path.join(process.cwd(), '../') + file;
                 var contents = fs.readFileSync(srcPath, 'utf-8');
                 var promise = CompileHtml(file, contents)
-                    .then(function (output) {
+                    .then(function (fileContents) {
+                        try {
+                            // -------------------------------------------------------------------------------
+                            // Parse the pre-defined scripting template...
+                            if (fileContents && templPathJS) {
+                                var contents = fs.readFileSync(templPathJS, 'utf-8').replace(/^\uFEFF/, '');
+                                var protoStr = fs.readFileSync(protoStrPath, 'utf-8').replace(/^\uFEFF/, '');
+                                var jsonEnc = compiler.spx.encoders.base64.encode(fileContents);
+                                var encoded = '\'' + jsonEnc + '\'';
+
+                                fileContents = !contents ? contents : contents
+                                    .replace(/___ctx___/g, compiler.opts.prefix)
+                                    .replace('/*{0}*/', encoded)
+                                    .replace('/*{1}*/', protoStr)
+                                    .replace('/*{2}*/', '')
+                            }
+                            // -------------------------------------------------------------------------------
+                        } catch (ex) {
+                            console.log('Error: ' + ex.message);
+                        }
+                        return fileContents;
+                    })
+                .then(function (fileContents) {
+                    try {
+                        // -------------------------------------------------------------------------------
+                        // Try to minify the script to reduce package size
+                        if (fileContents && compiler.opts.minifyScripts) {
+                            fileContents = GenerateMinified(fileContents);
+                        }
+                        // -------------------------------------------------------------------------------
+                    } catch (ex) {
+                        console.log('Error: ' + ex.message);
+                    }
+                    return fileContents;
+                })
+                .then(function (fileContents) {
+                    try {
+                        // -------------------------------------------------------------------------------
+                        // Write the contents to file
+                        if (fileContents) {
+                            var targetPath = path.join((outPath || process.cwd()), 'script/');
+                            var targetScript = path.join(targetPath, file + '.js');
+                            fs.writeFile(targetScript, fileContents, function (err) {
+                                if (err) {
+                                    console.error(err);
+                                }
+                            });
+                        }
+                        // -------------------------------------------------------------------------------
+                    } catch (ex) {
+                        console.log('Error: ' + ex.message);
+                    }
+                    return fileContents;
+                })
+                .then(function (output) {
                         if (output) {
                             output = output.replace(/( *\r\n *)/g, '');
                             targets[file] = output;
                         }
-                    })                
+                    })
 
                 promises.push(promise);
             });
