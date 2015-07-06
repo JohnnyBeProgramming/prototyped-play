@@ -4,8 +4,8 @@
   "author": "author",
   "private": true,
   "scripts": {
-    "prestart": "node Compiler.js",
-    "start": "grunt & start chrome \"%CD%\\compiled\\index.html\"",
+    "prestart": "grunt",
+    "start": "node Compiler.js & start chrome \"%CD%\\compiled\\index.html\"",
     "xpoststart": "start chrome http://localhost:4200 & call broccoli serve"
   },
   "globals": {

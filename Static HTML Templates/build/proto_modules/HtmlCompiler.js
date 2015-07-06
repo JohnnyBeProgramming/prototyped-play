@@ -1,4 +1,4 @@
-﻿var sp = require('../../assets/lib/proto/StringPrototyped.js');
+﻿var sp = require('./StringPrototyped.js');
 var path = require('path');
 var fs = require('fs');
 var q = require('q');
@@ -8,6 +8,7 @@ var toHtml = require('htmlparser-to-html');
 var HtmlCompiler = {
     opts: {
         base: './',
+        dest: './gen',
         debug: false,
         prefix: '$__$',
         clearHtml: false,
@@ -25,13 +26,21 @@ var HtmlCompiler = {
         ] : []),
     },
     spx: new sp(),
+
+    html: function (file, contents) {
+        return HtmlCompiler
+            .gen(file, contents)
+            .then(function (output) {
+                return HtmlCompiler.genFile(file, output);
+            });
+    },
+
     gen: function (file, contents, callback) {
         var deferred = q.defer();
 
         // Strip non-html prefix
         var pilot = contents.indexOf('<html');
         if (pilot > 0) contents = contents.substr(pilot);
-        //console.log(contents);
 
         var htmlparser = require("htmlparser");
         var handler = new htmlparser.DefaultHandler(function (error, dom) {
@@ -70,6 +79,82 @@ var HtmlCompiler = {
         parser.parseComplete(contents);
 
         return deferred.promise;
+    },
+
+    genFile: function (filename, output) {
+
+        // Generate Data (sync)
+        HtmlCompiler.genJSON(filename, output);
+
+        // Generate the compiled script (async)
+        return HtmlCompiler.genScript(filename, output);
+    },
+
+    genJSON: function (filename, output) {
+        var contents = JSON.stringify(output, null, 4);
+        var targetPath = path.join((HtmlCompiler.opts.dest || process.cwd()), 'data/');
+        var targetJSON = path.join(targetPath, filename + '.json');
+        if (!fs.existsSync(targetPath)) {
+            fs.mkdirSync(targetPath);
+        }
+        fs.writeFileSync(targetJSON, contents);
+    },
+
+    genScript: function (filename, output) {
+        var q = require('q');
+        var deferred = q.defer();
+
+        var targetPath = path.join((HtmlCompiler.opts.dest || process.cwd()), 'script/');
+        if (!fs.existsSync(targetPath)) {
+            fs.mkdirSync(targetPath);
+        }
+
+        try {
+            // Parse the contents and resolve promise
+            var fileContents = JSON.stringify(output);
+            if (fileContents) {
+                deferred.resolve(fileContents);
+            } else {
+                deferred.reject(new Error('No Result'));
+            }
+
+        } catch (ex) {
+            deferred.reject(ex);
+        }
+
+        return deferred.promise;
+    },
+
+    genMinified: function (fileContents) {
+        try {
+            // Check for minification?
+            var opts = { fromString: true };
+            if (HtmlCompiler.opts.minifyScripts) {
+                opts = {
+                    fromString: true,
+                    mangle: {},
+                    warnings: false,
+                    compress: {
+                        pure_funcs: HtmlCompiler.opts.excludeStatements,
+                    }
+                };
+            } else {
+                opts = {
+                    fromString: true,
+                    mangle: false,
+                    compress: false
+                }
+            }
+
+            var UglifyJS = require("uglify-js");
+            var minified = UglifyJS.minify(fileContents, opts);
+
+            fileContents = minified.code;
+
+        } catch (ex) {
+            console.log(' - Error: ' + ex.message);
+        }
+        return fileContents;
     },
 
     expandElem: function (item) {
@@ -125,7 +210,7 @@ var HtmlCompiler = {
 
                         output = {
                             type: 'script',
-                            text: HtmlCompiler.opts.prefix + '.' + type + '(' + JSON.stringify(data)  + ');',
+                            text: HtmlCompiler.opts.prefix + '.' + type + '(' + JSON.stringify(data) + ');',
                         };
                         break;
                     default:

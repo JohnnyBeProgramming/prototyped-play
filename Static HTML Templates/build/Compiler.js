@@ -3,100 +3,17 @@
 /* -------------------------------------------------------------------------------
 Example of a custom HTTP Server
 ------------------------------------------------------------------------------- */
-var outPath = 'compiled/';
-var templHtml = 'scripts/Linker.template.html';
-var templPathJS = 'scripts/Linker.template.js';
-var protoStrPath = '../assets/lib/proto/StringPrototyped.js';
+var templHtml = 'templates/Compiler.template.html';
+var templPathJS = 'templates/Compiler.template.js';
+var protoStrPath = './proto_modules/StringPrototyped.js';
+var protoHtmlPath = './proto_modules/HtmlCompiler.js';
 
 var q = require('q');
 var fs = require('fs');
 var path = require('path');
-var compiler = require('./scripts/HtmlCompiler.js');
+var compiler = require(protoHtmlPath);
 var basePath = compiler.opts.base = '../';
-
-function CompileHtml(file, contents) {
-    return compiler
-        .gen(file, contents)
-        .then(function (output) {
-            return GenerateFile(file, output);
-        });
-}
-
-function GenerateFile(filename, output) {
-
-    // Generate Data (sync)
-    GenerateJSON(filename, output);
-
-    // Generate the compiled script (async)
-    return GenerateScript(filename, output);
-}
-
-function GenerateJSON(filename, output) {
-    var contents = JSON.stringify(output, null, 4);
-    var targetPath = path.join((outPath || process.cwd()), 'data/');
-    var targetJSON = path.join(targetPath, filename + '.json');
-    if (!fs.existsSync(targetPath)) {
-        fs.mkdirSync(targetPath);
-    }
-    fs.writeFileSync(targetJSON, contents);
-}
-
-function GenerateScript(filename, output) {
-    var q = require('q');
-    var deferred = q.defer();
-
-    var targetPath = path.join((outPath || process.cwd()), 'script/');
-    if (!fs.existsSync(targetPath)) {
-        fs.mkdirSync(targetPath);
-    }
-
-    try {
-        // Parse the contents and resolve promise
-        var fileContents = JSON.stringify(output);
-        if (fileContents) {
-            deferred.resolve(fileContents);
-        } else {
-            deferred.reject(new Error('No Result'));
-        }
-
-    } catch (ex) {
-        deferred.reject(ex);
-    }
-
-    return deferred.promise;
-}
-
-function GenerateMinified(fileContents) {
-    try {
-        // Check for minification?
-        var opts = { fromString: true };
-        if (compiler.opts.minifyScripts) {
-            opts = {
-                fromString: true,
-                mangle: {},
-                warnings: false,
-                compress: {
-                    pure_funcs: compiler.opts.excludeStatements,
-                }
-            };
-        } else {
-            opts = {
-                fromString: true,
-                mangle: false,
-                compress: false
-            }
-        }
-
-        var UglifyJS = require("uglify-js");
-        var minified = UglifyJS.minify(fileContents, opts);
-
-        fileContents = minified.code;
-
-    } catch (ex) {
-        console.log(' - Error: ' + ex.message);
-    }
-    return fileContents;
-}
+var outPath = compiler.opts.dest = 'compiled/';
 
 var success = true;
 try {
@@ -122,7 +39,7 @@ try {
                 console.log('   + ' + file);
                 var srcPath = path.join(process.cwd(), '../') + file;
                 var contents = fs.readFileSync(srcPath, 'utf-8');
-                var promise = CompileHtml(file, contents)
+                var promise = compiler.html(file, contents)
                     .then(function (fileContents) {
                         try {
                             // -------------------------------------------------------------------------------
@@ -145,39 +62,39 @@ try {
                         }
                         return fileContents;
                     })
-                .then(function (fileContents) {
-                    try {
-                        // -------------------------------------------------------------------------------
-                        // Try to minify the script to reduce package size
-                        if (fileContents && compiler.opts.minifyScripts) {
-                            fileContents = GenerateMinified(fileContents);
+                    .then(function (fileContents) {
+                        try {
+                            // -------------------------------------------------------------------------------
+                            // Try to minify the script to reduce package size
+                            if (fileContents && compiler.opts.minifyScripts) {
+                                fileContents = compiler.genMinified(fileContents);
+                            }
+                            // -------------------------------------------------------------------------------
+                        } catch (ex) {
+                            console.log('Error: ' + ex.message);
                         }
-                        // -------------------------------------------------------------------------------
-                    } catch (ex) {
-                        console.log('Error: ' + ex.message);
-                    }
-                    return fileContents;
-                })
-                .then(function (fileContents) {
-                    try {
-                        // -------------------------------------------------------------------------------
-                        // Write the contents to file
-                        if (fileContents) {
-                            var targetPath = path.join((outPath || process.cwd()), 'script/');
-                            var targetScript = path.join(targetPath, file + '.js');
-                            fs.writeFile(targetScript, fileContents, function (err) {
-                                if (err) {
-                                    console.error(err);
-                                }
-                            });
+                        return fileContents;
+                    })
+                    .then(function (fileContents) {
+                        try {
+                            // -------------------------------------------------------------------------------
+                            // Write the contents to file
+                            if (fileContents) {
+                                var targetPath = path.join((outPath || process.cwd()), 'script/');
+                                var targetScript = path.join(targetPath, file + '.js');
+                                fs.writeFile(targetScript, fileContents, function (err) {
+                                    if (err) {
+                                        console.error(err);
+                                    }
+                                });
+                            }
+                            // -------------------------------------------------------------------------------
+                        } catch (ex) {
+                            console.log('Error: ' + ex.message);
                         }
-                        // -------------------------------------------------------------------------------
-                    } catch (ex) {
-                        console.log('Error: ' + ex.message);
-                    }
-                    return fileContents;
-                })
-                .then(function (output) {
+                        return fileContents;
+                    })
+                    .then(function (output) {
                         if (output) {
                             output = output.replace(/( *\r\n *)/g, '');
                             targets[file] = output;
