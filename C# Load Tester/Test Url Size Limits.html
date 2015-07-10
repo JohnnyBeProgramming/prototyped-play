@@ -1,0 +1,143 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Check Maximum Payload Size</title>
+</head>
+<body>
+    <h1>
+        Get maximum payload size.
+    </h1>
+    <p>
+        Link: <a id="resultLink" href="#">Run the check now</a>
+    </p>
+    <p>
+        Max Size: <b id="resultSize">Unknown</b>
+    </p>
+    <p>
+        Status: <b id="resultState">Unknown</b>
+    </p>
+    <p>
+        <input type="button" value="Start" onclick="checkSizes()" />
+    </p>
+    <script>
+        var inp = 'X';
+        var pilotLow = 1;
+        var pilotHigh = 1;
+
+        var webContext = {
+            db: null,
+            open: function () {
+                var dbSize = 5 * 1024 * 1024; // 5MB
+                webContext.db = openDatabase("CheckSize", "1", "CaptureInfo", dbSize);
+                console.log(' - Opened DB:', webContext.db);
+            },
+            createTable: function (tableDef) {
+                webContext.db.transaction(function (tx) {
+                    tx.executeSql('CREATE TABLE IF NOT EXISTS ' + tableDef, []);
+                });
+            },
+            onError: function (tx, e) {
+                console.warn("There has been an error: " + e.message);
+            },
+            onSuccess: function (tx, r) {
+                // re-render the data.
+                // loadTodoItems is defined in Step 4a
+                console.log(' - Added:', r);
+            },
+        };
+
+        //init();
+
+        function init() {
+            webContext.open();
+            webContext.createTable('sizeCheck(ID INTEGER PRIMARY KEY ASC, limit INTEGER)');
+            /*
+            try {
+                if (webContext.db) {
+                    console.log(' - Init:', webContext.db);
+                        webContext.db.transaction(function (tx) {
+                        tx.executeSql("SELECT * FROM sizeCheck", [], function (tx, r) {
+                            console.log(' - Selected:', r);
+                        }, webContext.onError);
+                    });
+                }
+            } catch (ex) {
+                console.warn('DB Error: ' + ex.message);
+            }
+            */
+        }
+
+        function setState(desc) {
+            var label = document.getElementById('resultState');
+            if (label) {
+                label.innerHTML = desc;
+            }
+            console.log(desc);
+        }
+
+        function checkSizes() {
+            try {
+                inp = '';
+                pilotHigh = 2 * pilotLow;
+
+                setState('Checking...' + getSizeDesc(pilotHigh));
+                for (var i = 0; i < pilotHigh; i++) {
+                    inp += 'X';
+                }
+
+                var link = document.getElementById('resultLink');
+                if (link) {
+                    link.setAttribute('href', 'javascript:confirmSize(' + JSON.stringify(inp) + ')'); // +26
+                    var intv = setInterval(function () {
+                        clearInterval(intv);
+                        link.click();
+                    }, 100);
+                }
+            } catch (ex) {
+                alert(ex.message);
+            }
+        }
+
+        function getSizeDesc(amount) {
+            if (amount < 1024) return '' + (amount) + ' bytes';
+            if (amount < 1024 * 1024) return '' + (amount / 1024) + ' Kb';
+            if (amount < 1024 * 1024 * 1024) return '' + (amount / 1024 / 1024) + ' Mb';
+            return '' + (amount / 1024 / 1024 / 1024) + ' Gb';
+        }
+
+        function confirmSize(input) {
+            try {
+                pilotLow = input.length;
+
+                setState('Confirmed...' + getSizeDesc(pilotLow) + ' (' + pilotLow + ')');
+                var elem = document.getElementById('resultSize');
+                if (elem) {
+                    elem.innerHTML = getSizeDesc(pilotLow);
+                }
+
+                /*
+                try {
+                    if (webContext.db) {
+                        webContext.db.transaction(function (tx) {
+                            tx.executeSql("INSERT INTO sizeCheck(limit) VALUES (?)",
+                                [pilotLow],
+                                webContext.onSuccess,
+                                webContext.onError);
+                        });
+                    }
+                } catch (ex) {
+                    console.warn('DB Error: ' + ex.message);
+                }
+                */
+
+                if (pilotLow < 32 * 1024 * 1024) {
+                    checkSizes();
+                }
+            } catch (ex) {
+                alert(ex.message);
+            }
+        }
+
+    </script>
+</body>
+</html>
