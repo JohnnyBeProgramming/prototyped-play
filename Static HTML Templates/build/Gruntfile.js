@@ -8,6 +8,7 @@ module.exports = function (grunt) {
     // Load required tasks
     grunt.loadNpmTasks('grunt-angular-templates');
     grunt.loadNpmTasks('grunt-contrib-cssmin');
+    grunt.loadNpmTasks('grunt-browserify');
 
     // Define the task(s)
     grunt.registerTask('default', [
@@ -22,6 +23,7 @@ module.exports = function (grunt) {
     ]);
     grunt.registerTask('build-scripts', [
         'ngtemplates',
+        'browserify',
     ]);
 
     // Configure grunt
@@ -82,6 +84,14 @@ module.exports = function (grunt) {
                 //cwd: '<%= cfg.base %>',
                 src: '<%= cfg.base %>views/**/*.tpl.html',
                 dest: '<%= cfg.base %>assets/lib/app.tpl.js'
+            },
+        },
+        browserify: {
+            js: {
+                // A single entry point for our app
+                src: '<%= cfg.base %>assets/lib/app.main.js',
+                // Compile to a single file to add a script tag for in your HTML
+                dest: '<%= cfg.base %>assets/lib/app.js',
             },
         },
     };
