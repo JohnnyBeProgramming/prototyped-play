@@ -1,0 +1,118 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>HTML Template</title>
+    <link href="./assets/css/app.min.css" rel="stylesheet" />
+    <style>
+        @import 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.3.0/css/font-awesome.min.css';
+    </style>
+</head>
+<body>
+
+    <div class="docked-container"
+         ng-class="{ 'docked-left':!docked, 'docked-full':docked }"
+         ng-init="docked = true">
+
+        <!-- Top Navigation -->
+        <div class="anim-fade">
+            <div class="view-panel view-toolbar left">
+                Top Navigation ( Left )
+            </div>
+            <div class="view-panel view-toolbar right">
+                Top Navigation ( Right )
+            </div>
+        </div>
+        <div class="top-spacer">
+            <div class="mask noselect anim-fade"></div>
+            <span class="anim-slide">
+                <a href="" ng-click="docked = !docked">
+                    <i id="__appIcon" class="fa fa-cog faa-spin animated" style="font-size: xx-large;"></i>
+                </a>
+            </span>
+			<span id="__appStatusText" style="display: none">This is Lala...</span>
+        </div>
+
+        <!-- Left Navigation -->
+        <div class="vertical-spacer right view-panel anim-fade">
+            <div class="mask noselect"></div>
+            <div class="left-container">
+                Left Navigation
+            </div>
+        </div>
+
+
+        <!-- Main Contents -->
+        <div class="main-contents view-panel anim-fade">
+
+        </div>
+
+
+        <!-- Footer -->
+        <div class="bottom-spacer anim-fade">
+            <div class="mask noselect"></div>
+            <div class="view-panel bottom-container">
+                Footer
+            </div>
+        </div>
+
+    </div>
+
+    <!--[if gt IE 9]><!-->
+    <!--
+    -->
+    <script src="./assets/lib/app.start.js"></script>
+    <script>
+        var deps = {
+            jquery: {
+                url: 'https://code.jquery.com/jquery-2.1.4.min.js',
+                qry: typeof jQuery === 'undefined',
+            },
+            angular: {
+                url: 'https://ajax.googleapis.com/ajax/libs/angularjs/1.3.14/angular.min.js',
+                qry: typeof angular === 'undefined',
+            },
+        };
+
+        var appContext = {
+            start: function (callback) {
+                console.log(' - Bootstrapping...');
+                appContext.status(null, 'fa fa-globe', null);
+                if (callback) callback();
+            },
+            error: function (err) {
+                appContext.status('red', 'fa fa-exclamation-circle faa-ring animated', '0 0 2px #800');
+                throw err;
+            },
+            status: function (color, icon, shadow) {
+                var elem = document.getElementById('__appIcon');
+                if (elem) {
+                    elem.className = icon;
+                    elem.style.color = color;
+                    elem.style.textShadow = shadow;
+                }
+            },
+        };
+
+        var ready = false;
+        if (typeof appLoader !== 'undefined') {
+            appLoader.init(deps, function () {
+                appContext.start(function () {
+
+                    angular.module('myApp', []);
+                    angular.module('myUI', [])
+                        .run(['$rootScope', function ($rootScope) {
+                            $rootScope.docker = { enabled: true };
+                        }]);
+                    angular.bootstrap($('.docked-container'), ['myApp', 'myUI']);
+
+                });
+                ready = true;
+            }, appContext.error);
+        } else {
+            appContext.error(new Error('Application offline...'));
+        }
+    </script>
+    <!--<![endif]-->
+
+</body>
+</html>
