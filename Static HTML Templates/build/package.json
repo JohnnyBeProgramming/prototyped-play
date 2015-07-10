@@ -4,9 +4,7 @@
   "author": "author",
   "private": true,
   "scripts": {
-    "prestart": "grunt",
-    "start": "node Compiler.js & start chrome \"%CD%\\compiled\\index.html\"",
-    "xpoststart": "start chrome http://localhost:4200 & call broccoli serve"
+    "start": "grunt"
   },
   "globals": {
     "broccoli-cli": "^0.0.1"
@@ -20,6 +18,7 @@
     "broccoli-env": "^0.0.1",
     "broccoli-less-single": "^0.4.0",
     "broccoli-merge-trees": "^0.2.1",
+    "broccoli-ng-templatecache": "^0.1.4",
     "broccoli-static-compiler": "^0.2.1",
     "broccoli-stew": "^0.3.3",
     "broccoli-typescript": "^0.4.0",
@@ -30,6 +29,8 @@
     "grunt-usemin": "^3.0.0",
     "htmlparser": "^1.7.7",
     "htmlparser-to-html": "0.0.5",
+    "proto-html-compiler": "^1.0.4",
+    "proto-js-string": "^1.0.0",
     "q": "^1.4.1",
     "uglify-js": "^2.4.23"
   }

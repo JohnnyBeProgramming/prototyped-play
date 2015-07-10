@@ -29,8 +29,8 @@ module.exports = function (grunt) {
         pkg: grunt.file.readJSON('package.json'),
         env: process.env,
         cfg: {
-            base: '../',
-            dest: '../',
+            base: '../app/',
+            dest: '../dest/',
         },
         cssmin: {
             options: {
@@ -41,12 +41,12 @@ module.exports = function (grunt) {
             target: {
                 files: [{
                     expand: true,
-                    cwd: '<%= cfg.dest %>assets/css',
+                    cwd: '<%= cfg.base %>assets/css',
                     src: [
                         '*.css',
                         '!*.min.css'
                     ],
-                    dest: '<%= cfg.dest %>assets/css',
+                    dest: '<%= cfg.base %>assets/css',
                     ext: '.min.css'
                 }]
             }
@@ -81,7 +81,7 @@ module.exports = function (grunt) {
             app: {
                 //cwd: '<%= cfg.base %>',
                 src: '<%= cfg.base %>views/**/*.tpl.html',
-                dest: '<%= cfg.dest %>assets/lib/app.tpl.js'
+                dest: '<%= cfg.base %>assets/lib/app.tpl.js'
             },
         },
     };
