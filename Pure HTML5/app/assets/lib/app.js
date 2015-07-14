@@ -105,10 +105,45 @@ module.exports = angular.module('myApp', [])
     })
 
 },{}],3:[function(require,module,exports){
+var $jsonp = (function () {
+    var that = {};
+
+    that.send = function (src, options) {
+        var callback_name = options.callbackName || 'callback',
+          on_success = options.onSuccess || function () { },
+          on_timeout = options.onTimeout || function () { },
+          timeout = options.timeout || 10; // sec
+
+        var timeout_trigger = window.setTimeout(function () {
+            window[callback_name] = function () { };
+            on_timeout();
+        }, timeout * 1000);
+
+        window[callback_name] = function (data) {
+            window.clearTimeout(timeout_trigger);
+            on_success(data);
+        }
+
+        var script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.async = true;
+        script.src = src;
+
+        document.getElementsByTagName('head')[0].appendChild(script);
+    }
+
+    return that;
+})();
+
+window.handleStuff = function (result) {
+    console.log(' - Handle Stuff: ', result);
+}
+
+
 var appLoader = {
-    counter: 0,
+    timeout: 5 * 1000, //2 * 60 * 1000,
+    failures: 0,
     init: function (deps, callback, errorHandler) {
-        appLoader.counter = 0;
         appLoader.failures = 0;
         var requirements = [];
         for (var name in deps) {
@@ -119,59 +154,82 @@ var appLoader = {
         }
 
         if (requirements.length) {
-            console.log(' - Loading dependencies');
-            requirements.forEach(function (url) {
-                console.log('   + ', url);
-                appLoader.counter++;
-                appLoader.load(url, function (result) {
-                    if (!result) {
-                        console.warn('Warning: Script timed out:', url);
-                        appLoader.failures++;
-                    } else {
-                        // Loaded...
-                    }
-                    appLoader.counter--;
-                    appLoader.check(callback, errorHandler);
-                });
-            });
+            console.log(' - Loading dependencies:');
+            appLoader.next(requirements, callback, errorHandler);
         } else {
-            appLoader.check(callback, errorHandler);
+            if (callback) callback();
+        }
+    },
+
+    next: function (requirements, callback, errorHandler) {
+        try {
+            if (!requirements.length) {
+                // Queue is empty or done...
+                if (appLoader.failures > 0) {
+                    var err = new Error('Failed to load one or more dependencies...');
+                    if (errorHandler) errorHandler(err);
+                    throw err;
+                } else {
+                    if (callback) callback();
+                }
+                return;
+            }
+
+            var url = requirements.splice(0, 1)[0];
+            appLoader.load(url, function (result) {
+                if (!result) {
+                    console.warn('Warning: Script timed out:', url);
+                    appLoader.failures++;
+                    //ToDo: Find a fallback mechanism...
+                    appLoader.next(requirements, callback, errorHandler);
+                    return; // Not loaded...
+                } else {
+                    // Loaded...
+                    appLoader.next(requirements, callback, errorHandler);
+                }
+            });
+
+        } catch (err) {
+            if (errorHandler) errorHandler(err);
+            throw err;
         }
     },
 
     load: function (url, callback) {
-        var hasLoaded = false;
-        var srciptElem = document.createElement('script');
-        if (srciptElem) {
-            srciptElem.onload = function (evt) {
-                hasLoaded = true;
-                if (callback) callback(url, evt);
-            }
-            srciptElem.src = url;
-            document.body.appendChild(srciptElem);
-        }
-        var intv = setInterval(function () {
-            clearInterval(intv);
-            if (!hasLoaded && callback) {
-                callback(false, null);
-            }
-        }, 2 * 60 * 1000);
-    },
+        var isReady = false;
+        try {
+            console.log('   + ', url);
 
-    check: function (callback, errorHandler) {
-        if (appLoader.counter == 0) {
-            if (appLoader.failures > 0) {
-                var err = new Error('Failed to load one or more dependencies...');
-                if (errorHandler) errorHandler(err);
-                throw err;
-            } else {
-                if (callback) callback();
+            var srciptElem = document.createElement('script');
+            if (srciptElem) {
+                srciptElem.onload = function (evt) {
+                    isReady = true;
+                    if (callback) callback(url, evt);
+                }
+                srciptElem.src = url;
+                document.body.appendChild(srciptElem);
             }
+
+            var intv = setInterval(function () {
+                clearInterval(intv);
+                if (!isReady && callback) {
+                    isReady = true;
+                    callback(false, null);
+                }
+            }, appLoader.timeout);
+        } catch (ex) {
+            console.warn('Warning: Script refused to load. ' + ex.message);
+            isReady = true;
+            callback(false, null);
         }
     },
 };
 
-module.exports = window.appLoader = appLoader;
+if (typeof module !== 'undefined') {
+    module.exports = appLoader;
+}
+
+window.appLoader = appLoader;
 },{}],4:[function(require,module,exports){
 angular.module('myApp').run(['$templateCache', function($templateCache) {
   'use strict';
