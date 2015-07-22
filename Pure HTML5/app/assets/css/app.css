@@ -175,6 +175,7 @@ body .docked-container {
   position: absolute;
   outline: solid 1px #808080;
   z-index: 2100000000;
+  pointer-events: none;
 }
 body .docked-container .anim-slide {
   left: 32px !important;
@@ -259,4 +260,23 @@ body .docked-left .anim-slide:hover {
     left: 32px !important;
     opacity: 0.85;
   }
+}
+body .xss-notify {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  font-size: 11px;
+  position: absolute;
+  z-index: 2110000000;
+}
+body .xss-notify .bar {
+  border-top: solid 1px #000;
+  color: #000;
+  padding: 3px;
+}
+body .xss-notify .info {
+  background: rgba(236, 246, 252, 0.5);
+}
+body .xss-notify .warn {
+  background: rgba(254, 243, 183, 0.5);
 }

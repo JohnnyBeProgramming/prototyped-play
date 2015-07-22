@@ -89,9 +89,9 @@ module.exports = function (grunt) {
         browserify: {
             js: {
                 // A single entry point for our app
-                src: '<%= cfg.base %>assets/lib/app.main.js',
+                src: '<%= cfg.base %>assets/lib/app.js',
                 // Compile to a single file to add a script tag for in your HTML
-                dest: '<%= cfg.base %>assets/lib/app.js',
+                dest: '<%= cfg.base %>assets/lib/app.bin.js',
             },
         },
     };

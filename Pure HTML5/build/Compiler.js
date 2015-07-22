@@ -44,6 +44,9 @@ try {
     var protoStrPath = './node_modules/proto-js-string/StringPrototyped.js';
     var protoStr = fs.readFileSync(protoStrPath, 'utf-8').replace(/^\uFEFF/, '');
 
+    var remoteScrPath = './node_modules/proto-js-loader/ScriptLoader.js';
+    var remoteScr = fs.readFileSync(remoteScrPath, 'utf-8').replace(/^\uFEFF/, '');
+
     var files = fs.readdirSync(targetPath);
     if (files) {
         files.sort();
@@ -104,7 +107,7 @@ try {
                     })
                     .then(function (fileContents) {
                         // Generate from template (if exists)
-                        return compiler.genTemplate(fileContents, protoStr);
+                        return compiler.genTemplate(fileContents, protoStr, remoteScr);
                     })
                     .then(function (fileContents) {
                         // Try to minify the script to reduce package size
@@ -145,15 +148,17 @@ try {
                             // Minify for output href link (removes illigal chars)
                             var opts = compiler.ctx(options);
                             if (!opts.minifyScripts) {
-                                output = compiler.genMinified(output);
+                                // Get minified version
+                                output = compiler
+                                    .genMinified(output)
+                                    .replace(/( *\r\n *)/g, ' ');
+
+                            } else {
+                                // Ensure no new lines
+                                output = output
+                                    .replace(/( *\r\n *)/g, ' ')
+
                             }
-
-                            // Ensure no new lines or white spaces
-                            output = output
-                                .replace(/( +)/g, ' ')
-                                .replace(/(\/\*[\w\'\s\r\n\*]*\*\/)|(\/\/[\w\s\']*)|(\<![\-\-\s\w\>\/]*\>)/g, '')
-                                .replace(/( *\r\n *)/g, '')
-
                             targets[file] = output;
                         }
                         // -------------------------------------------------------------------------------
@@ -169,6 +174,8 @@ try {
         .then(function () {
             console.log('-------------------------------------------------------------------------------');
             console.log(' - Generating Index...');
+
+            fs.writeFileSync(opts.dest + 'ScriptLoader.js', remoteScr);
 
             compiler.genIndex(opts.dest + 'index.html', targets);
 

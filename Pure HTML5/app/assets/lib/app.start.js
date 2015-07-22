@@ -18,7 +18,6 @@
             if (callback) callback();
         }
     },
-
     next: function (requirements, callback, errorHandler) {
         try {
             if (!requirements.length) {
@@ -54,10 +53,12 @@
     },
 
     load: function (url, callback) {
+        // ToDo: Replace with...
+        // url['']().inject(callback, async)
+
         var isReady = false;
         try {
-            console.log('   + ', url);
-
+            console.log('   + ', url);            
             var srciptElem = document.createElement('script');
             if (srciptElem) {
                 srciptElem.onload = function (evt) {
@@ -67,7 +68,6 @@
                 srciptElem.src = url;
                 document.body.appendChild(srciptElem);
             }
-
             var intv = setInterval(function () {
                 clearInterval(intv);
                 if (!isReady && callback) {
@@ -75,12 +75,15 @@
                     callback(false, null);
                 }
             }, appLoader.timeout);
+
         } catch (ex) {
             console.warn('Warning: Script refused to load. ' + ex.message);
             isReady = true;
             callback(false, null);
         }
     },
+
+
 };
 
 if (typeof module !== 'undefined') {
