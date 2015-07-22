@@ -27,3 +27,9 @@ var appUI = {
         }
     },
 };
+
+if (typeof module !== 'undefined') {
+    module.exports = appUI;
+}
+
+window.appUI = appUI;

@@ -17,7 +17,7 @@ try {
         base: '../app',
         dest: './compiled/',
         clearHtml: false,
-        mergeGroups: true,
+        mergeGroups: false,
         queueActions: true,
         minifyScripts: true,
         scriptElements: true,
