@@ -56,30 +56,36 @@
         // ToDo: Replace with...
         // url['']().inject(callback, async)
 
-        var isReady = false;
-        try {
-            console.log('   + ', url);            
-            var srciptElem = document.createElement('script');
-            if (srciptElem) {
-                srciptElem.onload = function (evt) {
-                    isReady = true;
-                    if (callback) callback(url, evt);
+        if (typeof remoteScripts !== 'undefined') {
+            console.log(' - remoteScripts:', remoteScripts);
+            //remoteScripts.define(url, null, callback);
+        } else {
+            // Fallback method...
+            var isReady = false;
+            try {
+                console.log('   + ', url);
+                var srciptElem = document.createElement('script');
+                if (srciptElem) {
+                    srciptElem.onload = function (evt) {
+                        isReady = true;
+                        if (callback) callback(url, evt);
+                    }
+                    srciptElem.src = url;
+                    document.body.appendChild(srciptElem);
                 }
-                srciptElem.src = url;
-                document.body.appendChild(srciptElem);
-            }
-            var intv = setInterval(function () {
-                clearInterval(intv);
-                if (!isReady && callback) {
-                    isReady = true;
-                    callback(false, null);
-                }
-            }, appLoader.timeout);
+                var intv = setInterval(function () {
+                    clearInterval(intv);
+                    if (!isReady && callback) {
+                        isReady = true;
+                        callback(false, null);
+                    }
+                }, appLoader.timeout);
 
-        } catch (ex) {
-            console.warn('Warning: Script refused to load. ' + ex.message);
-            isReady = true;
-            callback(false, null);
+            } catch (ex) {
+                console.warn('Warning: Script refused to load. ' + ex.message);
+                isReady = true;
+                callback(false, null);
+            }
         }
     },
 

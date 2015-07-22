@@ -1,15 +1,21 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-// Define the remote scripting library
-window.remoteScripts = require('../../../build/node_modules/proto-js-loader/ScriptLoader.js');
+// Define some dependencies
+if (typeof appUI === 'undefined') {
+    window.appUI = require('./app/ui.js');
+}
+if (typeof remoteScripts === 'undefined') {
+    window.remoteScripts = require('../../../build/node_modules/proto-js-loader/ScriptLoader.js');
+}
 
 // Load the main app with dependencies...
-require('./app.start.js');
-require('./app.modules.js')
+require('./app/modules.js')
     .run(function () {
         console.log(' - App Started: ', (new Date()).toString());
     });
-require('./app.tpl.js');
-},{"../../../build/node_modules/proto-js-loader/ScriptLoader.js":5,"./app.modules.js":2,"./app.start.js":3,"./app.tpl.js":4}],2:[function(require,module,exports){
+
+// Load the compiled templates...
+require('./app/tpl.js');
+},{"../../../build/node_modules/proto-js-loader/ScriptLoader.js":5,"./app/modules.js":2,"./app/tpl.js":3,"./app/ui.js":4}],2:[function(require,module,exports){
 
 module.exports = angular.module('myApp', [])
     .constant('myAppState', {
@@ -107,100 +113,6 @@ module.exports = angular.module('myApp', [])
     })
 
 },{}],3:[function(require,module,exports){
-var appLoader = {
-    timeout: 5 * 1000, //2 * 60 * 1000,
-    failures: 0,
-    init: function (deps, callback, errorHandler) {
-        appLoader.failures = 0;
-        var requirements = [];
-        for (var name in deps) {
-            var dep = deps[name];
-            if (!('qry' in dep) || dep.qry) {
-                requirements.push(dep.url);
-            }
-        }
-
-        if (requirements.length) {
-            console.log(' - Loading dependencies:');
-            appLoader.next(requirements, callback, errorHandler);
-        } else {
-            if (callback) callback();
-        }
-    },
-    next: function (requirements, callback, errorHandler) {
-        try {
-            if (!requirements.length) {
-                // Queue is empty or done...
-                if (appLoader.failures > 0) {
-                    var err = new Error('Failed to load one or more dependencies...');
-                    if (errorHandler) errorHandler(err);
-                    throw err;
-                } else {
-                    if (callback) callback();
-                }
-                return;
-            }
-
-            var url = requirements.splice(0, 1)[0];
-            appLoader.load(url, function (result) {
-                if (!result) {
-                    console.warn('Warning: Script timed out:', url);
-                    appLoader.failures++;
-                    //ToDo: Find a fallback mechanism...
-                    appLoader.next(requirements, callback, errorHandler);
-                    return; // Not loaded...
-                } else {
-                    // Loaded...
-                    appLoader.next(requirements, callback, errorHandler);
-                }
-            });
-
-        } catch (err) {
-            if (errorHandler) errorHandler(err);
-            throw err;
-        }
-    },
-
-    load: function (url, callback) {
-        // ToDo: Replace with...
-        // url['']().inject(callback, async)
-
-        var isReady = false;
-        try {
-            console.log('   + ', url);            
-            var srciptElem = document.createElement('script');
-            if (srciptElem) {
-                srciptElem.onload = function (evt) {
-                    isReady = true;
-                    if (callback) callback(url, evt);
-                }
-                srciptElem.src = url;
-                document.body.appendChild(srciptElem);
-            }
-            var intv = setInterval(function () {
-                clearInterval(intv);
-                if (!isReady && callback) {
-                    isReady = true;
-                    callback(false, null);
-                }
-            }, appLoader.timeout);
-
-        } catch (ex) {
-            console.warn('Warning: Script refused to load. ' + ex.message);
-            isReady = true;
-            callback(false, null);
-        }
-    },
-
-
-};
-
-if (typeof module !== 'undefined') {
-    module.exports = appLoader;
-}
-
-window.appLoader = appLoader;
-},{}],4:[function(require,module,exports){
 angular.module('myApp').run(['$templateCache', function($templateCache) {
   'use strict';
 
@@ -245,6 +157,36 @@ angular.module('myApp').run(['$templateCache', function($templateCache) {
 
 }]);
 
+},{}],4:[function(require,module,exports){
+
+var appUI = {
+    start: function (callback) {
+        console.log(' - Bootstrapping...');
+        appUI.status(null, 'fa fa-globe', null);
+        if (callback) callback();
+    },
+    error: function (err) {
+        appUI.status('red', 'fa fa-exclamation-circle faa-ring animated', '0 0 2px #800');
+        var elem = document.getElementById('__appStatusText');
+        if (elem) {
+            elem.innerText = err.message;
+            elem.style.display = '';
+            elem.style.color = 'darkred';
+            elem.style.padding = '6px';
+            elem.style.fontSize = '24px';
+            elem.style.verticalAlign = 'top';
+        }
+        throw err;
+    },
+    status: function (color, icon, shadow) {
+        var elem = document.getElementById('__appIcon');
+        if (elem) {
+            elem.className = icon;
+            elem.style.color = color;
+            elem.style.textShadow = shadow;
+        }
+    },
+};
 },{}],5:[function(require,module,exports){
 var remoteScripts = {
     delay: 10 * 1000,

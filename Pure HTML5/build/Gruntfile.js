@@ -83,7 +83,7 @@ module.exports = function (grunt) {
             app: {
                 //cwd: '<%= cfg.base %>',
                 src: '<%= cfg.base %>views/**/*.tpl.html',
-                dest: '<%= cfg.base %>assets/lib/app.tpl.js'
+                dest: '<%= cfg.base %>assets/lib/app/tpl.js'
             },
         },
         browserify: {
@@ -91,7 +91,7 @@ module.exports = function (grunt) {
                 // A single entry point for our app
                 src: '<%= cfg.base %>assets/lib/app.js',
                 // Compile to a single file to add a script tag for in your HTML
-                dest: '<%= cfg.base %>assets/lib/app.bin.js',
+                dest: '<%= cfg.base %>assets/lib/bin.js',
             },
         },
     };

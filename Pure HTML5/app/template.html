@@ -29,7 +29,7 @@
                     <i id="__appIcon" class="fa fa-cog faa-spin animated" style="font-size: xx-large;"></i>
                 </a>
             </span>
-			<span id="__appStatusText" style="display: none"></span>
+            <span id="__appStatusText" style="display: none"></span>
         </div>
 
         <!-- Left Navigation -->
@@ -58,43 +58,14 @@
     </div>
 
     <!--[if gt IE 9]><!-->
-    <script src="./assets/lib/app.start.js"></script>
-    <script>
-        var deps = {
-            jquery: {
-                url: 'https://code.jquery.com/jquery-2.1.4.min.js',
-                qry: typeof jQuery === 'undefined',
-            },
-            angular: {
-                url: 'https://ajax.googleapis.com/ajax/libs/angularjs/1.3.14/angular.min.js',
-                qry: typeof angular === 'undefined',
-            },
-        };
-
-        var appContext = {
-            start: function (callback) {
-                console.log(' - Bootstrapping...');
-                appContext.status(null, 'fa fa-globe', null);
-                if (callback) callback();
-            },
-            error: function (err) {
-                appContext.status('red', 'fa fa-exclamation-circle faa-ring animated', '0 0 2px #800');
-                throw err;
-            },
-            status: function (color, icon, shadow) {
-                var elem = document.getElementById('__appIcon');
-                if (elem) {
-                    elem.className = icon;
-                    elem.style.color = color;
-                    elem.style.textShadow = shadow;
-                }
-            },
-        };
-
-        var ready = false;
-        if (typeof appLoader !== 'undefined') {
-            appLoader.init(deps, function () {
-                appContext.start(function () {
+    <!--Load all the required libraries (exclude IE < 10 from the party) -->
+    <script src="assets/lib/jquery/jquery-2.1.3.min.js"></script>
+    <script src="assets/lib/ng/angular.min.js"></script>
+    <script src="assets/lib/app/ui.js"></script>
+    <script>        
+        try {
+            if (typeof angular !== 'undefined') {
+                appUI.start(function () {
 
                     angular.module('myApp', []);
                     angular.module('myUI', [])
@@ -105,10 +76,11 @@
                     angular.bootstrap($('.docked-container'), ['myApp', 'myUI']);
 
                 });
-                ready = true;
-            }, appContext.error);
-        } else {
-            appContext.error(new Error('Application offline...'));
+            } else {
+                appUI.error(new Error('Application offline...'));
+            }
+        } catch (ex) {
+            appUI.error(ex);
         }
     </script>
     <!--<![endif]-->

@@ -4,61 +4,11 @@
     <base href="/">
     <meta charset="utf-8" />
     <title>My Application</title>
-    <link href="./assets/css/app.min.css" rel="stylesheet" />
     <style>
         @import 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.3.0/css/font-awesome.min.css';
-
-        body:before {
-            z-index: 2110000000;
-            content: 'Prototyped!';
-            position: absolute;
-            overflow: hidden;
-            height: auto;
-            width: auto;
-            right: -52px;
-            top: 28px;
-            opacity: 0.85;
-            color: #000000;
-            padding: 8px 64px;
-            font: bold 15px Sans-Serif;
-            text-align: center;
-            text-shadow: #6dc2ff 1px 1px 6px;
-            -webkit-transform: rotate(45deg);
-            -moz-transform: rotate(45deg);
-            -ms-transform: rotate(45deg);
-            -o-transform: rotate(45deg);
-            -webkit-box-shadow: 0px 0px 3px rgba(0, 0, 0, 0.3);
-            -moz-box-shadow: 0px 0px 3px rgba(0, 0, 0, 0.3);
-            box-shadow: 0px 0px 3px rgba(0, 0, 0, 0.3);
-            background: #ffffff;
-            background: -moz-linear-gradient(top, #ffffff 0%, #f3f3f3 50%, #ededed 51%, #ffffff 100%);
-            background: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #ffffff), color-stop(50%, #f3f3f3), color-stop(51%, #ededed), color-stop(100%, #ffffff));
-            background: -webkit-linear-gradient(top, #ffffff 0%, #f3f3f3 50%, #ededed 51%, #ffffff 100%);
-            background: -o-linear-gradient(top, #ffffff 0%, #f3f3f3 50%, #ededed 51%, #ffffff 100%);
-            background: -ms-linear-gradient(top, #ffffff 0%, #f3f3f3 50%, #ededed 51%, #ffffff 100%);
-            background: linear-gradient(to bottom, #ffffff 0%, #f3f3f3 50%, #ededed 51%, #ffffff 100%);
-            filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffff', endColorstr='#ffffff', GradientType=0);
-            pointer-events: none;
-        }
-
-            body:before:before,
-            body:before:after {
-                content: "";
-                border-top: 3px solid #808080;
-                border-left: 3px solid transparent;
-                border-right: 3px solid transparent;
-                position: absolute;
-                bottom: -3px;
-            }
-
-            body:before:before {
-                left: 0;
-            }
-
-            body:before:after {
-                right: 0;
-            }
     </style>
+    <link href="./assets/css/app.min.css" rel="stylesheet" />
+    <link href="./assets/css/prototyped.min.css" rel="stylesheet" />
 </head>
 <body>
 
@@ -81,60 +31,16 @@
     <!--Load all the required libraries (exclude IE < 10 from the party) -->
     <script src="https://code.jquery.com/jquery-2.1.4.min.js" html-compile="typeof jQuery === 'undefined'"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.14/angular.min.js" html-compile="typeof angular === 'undefined'"></script>
-    <!-- Note: Use CDN versions to reduce overall package size
-    <script src="assets/lib/jquery/jquery-2.1.3.min.js"></script>
-    <script src="assets/lib/angular/angular.min.js"></script>
-    -->
-
     <!-- Browsified contents...
-    <script src="./assets/lib/app.start.js"></script>
-    <script src="./assets/lib/app.modules.js"></script>
-    <script src="./assets/lib/app.tpl.js"></script>
+    <script src="./assets/lib/app/ui.js"></script>
+    <script src="./assets/lib/app/modules.js"></script>
+    <script src="./assets/lib/app/tpl.js"></script>
     -->
-    <script src="./assets/lib/app.bin.js"></script>
+    <script src="./assets/lib/bin.js"></script>
     <script>
-        var deps = {
-            /*
-            vendorName: {
-                url: 'https://vendor.com/script.min.js',
-                qry: typeof vendorObj === 'undefined',
-            },
-            */
-        };
-
-        var appContext = {
-            start: function (callback) {
-                console.log(' - Bootstrapping...');
-                appContext.status(null, 'fa fa-globe', null);
-                if (callback) callback();
-            },
-            error: function (err) {
-                appContext.status('red', 'fa fa-exclamation-circle faa-ring animated', '0 0 2px #800');
-                var elem = document.getElementById('__appStatusText');
-                if (elem) {
-                    elem.innerText = err.message;
-                    elem.style.display = '';
-                    elem.style.color = 'darkred';
-                    elem.style.padding = '6px';
-                    elem.style.fontSize = '24px';
-                    elem.style.verticalAlign = 'top';
-                }
-                throw err;
-            },
-            status: function (color, icon, shadow) {
-                var elem = document.getElementById('__appIcon');
-                if (elem) {
-                    elem.className = icon;
-                    elem.style.color = color;
-                    elem.style.textShadow = shadow;
-                }
-            },
-        };
-
-        var ready = false;
-        if (typeof appLoader !== 'undefined') {
-            appLoader.init(deps, function () {
-                appContext.start(function () {
+        try {
+            if (typeof angular !== 'undefined') {
+                appUI.start(function () {
 
                     angular.module('myUI', [])
                         .run(['$rootScope', function ($rootScope) {
@@ -143,10 +49,11 @@
                     angular.bootstrap($('.docked-container'), ['myApp', 'myUI']);
 
                 });
-                ready = true;
-            }, appContext.error);
-        } else {
-            appContext.error(new Error('Application offline...'));
+            } else {
+                appUI.error(new Error('Application offline...'));
+            }
+        } catch (ex) {
+            appUI.error(ex);
         }
     </script>
     <!--<![endif]-->
