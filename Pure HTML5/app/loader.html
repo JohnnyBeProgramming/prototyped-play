@@ -1,0 +1,312 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Script Importer</title>
+    <style>
+        @import url('https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css');
+        @import url('https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css');
+        @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.3.0/css/font-awesome.min.css');
+    </style>
+    <link href="assets/css/vendor/font-awesome-animation.min.css" rel="stylesheet" />
+    <!--
+    -->
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval'; child-src 'none'; object-src 'none'">
+</head>
+<body style="overflow: hidden;">
+    <div class="thumbnail" style="position:absolute; top:0; left: 0; right: 0; bottom: 0; display: flex; flex-direction:column; background-color: rgba(255, 255, 255, 0.75)">
+        <div class="form" style="flex-grow: 0; flex-shrink:0;">
+            <div class="input-group input-group-sm">
+                <span class="input-group-addon">URL:</span>
+                <input id="txtUrl" type="text" class="form-control" placeholder="Enter url to import..." value="https://code.jquery.com/jquery-2.1.4.min.js" />
+                <a class="input-group-addon btn btn-default" onclick="closeFrame();">
+                    Close
+                </a>
+            </div>
+        </div>
+        <div id="srcUrl" class="row" style="flex-grow: 1; flex-shrink:1; display: flex; flex-direction:column;">
+            <div class="col col-xs-12 col-md-12" style="flex-grow: 1; display: flex; flex-direction:column;">
+                <a id="lnkBtn" onclick="loadScript(document.getElementById('txtUrl').value)" class="btn btn-lg btn-primary" style="padding:24px; font-size: 24px; flex-grow: 1; text-align: center; vertical-align: middle !important;">
+                    <i id="lnkIco" class="fa fa-cloud-download faa-float animated fa-4x"></i>
+                    <div id="lnkTxt">Attach Script</div>
+                </a>
+            </div>
+        </div>
+        <textarea id="txtOut" style="display:none; flex-grow: 1; flex-direction:column; border: none; margin: 4px; font-family:monospace; font-size: 9px;">No Result</textarea>
+    </div>
+    <div style="cursor:pointer; position: absolute; left:0; bottom: 0; right:0; text-align: center; font-size: 11px; padding: 2px;">
+        <a id="lnkOut" style="display:none; color: #808080; text-decoration: none; white-space: nowrap;  overflow: hidden;  text-overflow: ellipsis;">Navigate to remote URL</a>
+    </div>
+    <script>
+        var autoLoad = false;
+        var pendingQueue = [];
+        var isBusyLoading = false;
+
+        function init() {
+            try {
+                // Attach callback
+                var targ = window;
+                if (targ && targ.addEventListener) {
+                    targ.addEventListener('message', listener, false);
+                } else if (targ && targ.attachEvent) {
+                    targ.attachEvent('onmessage', listener);
+                }
+            } catch (ex) {
+                console.warn('Warning: ' + ex.message);
+            }
+        }
+
+        function listener(event) {
+            //if (event.origin !== window.location.href) return
+            var data = event.data;
+            if (data && data.length && data.forEach) {
+                data.forEach(function (item) {
+                    switch (item.type) {
+                        case 'queue':
+                            queue(item.url);
+                            break;
+                    }
+                });
+            }
+        }
+
+        function queue(url, callback) {
+            if (!pendingQueue.filter(function (itm) { return url == itm }).length) {
+                pendingQueue.push({
+                    url: url,
+                    callback: callback,
+                });
+            } else {
+                console.warn('Already queued:', url);
+            }
+
+            if (!isBusyLoading && pendingQueue.length) {
+                var itm = pendingQueue.splice(0, 1);
+                loadScript(itm[0].url);
+            }
+        }
+
+        function setCloser() {
+            // Close this window if no further instructions after timeout
+            var intv = setInterval(function () {
+                if (!isBusyLoading) {
+                    clearInterval(intv);
+                    closeFrame();
+                }
+            }, 500);
+        }
+
+        function handleSuccess(url, result) {
+            if (lnkBtn) lnkBtn.className = 'btn btn-lg btn-success';
+            if (lnkIco) lnkIco.className = 'fa fa-check faa-pulse animated fa-4x';
+            if (lnkTxt) lnkTxt.innerHTML = 'Success';
+
+            try {
+                // Clear busy flag...
+                isBusyLoading = false;
+
+                // Set result
+                if (txtOut) txtOut.value = result || '';
+                if (lnkOut) {
+                    lnkOut.innerText = 'Show / Hide Respone Text';
+                    lnkOut.style.display = 'block';
+                    lnkOut.onclick = function () {
+                        if (result && srcUrl && txtOut) {
+                            var toggle = srcUrl.style.display != 'none';
+                            srcUrl.style.display = toggle ? 'none' : 'flex';
+                            txtOut.style.display = toggle ? 'flex' : 'none';
+                            txtOut.select();
+                        }
+                        return false;
+                    }
+                }
+
+                // Reply with response
+                respond([{
+                    url: url,
+                    data: result,
+                    type: 'script',
+                }]);
+
+                console.groupEnd();
+            } catch (ex) {
+                handleException(url, ex)
+            }
+        }
+
+        function handleException(url,ex) {
+            console.error(ex);
+            isBusyLoading = false;
+
+            if (lnkBtn) lnkBtn.className = 'btn btn-lg btn-danger';
+            if (lnkIco) lnkIco.className = 'fa fa-times-circle faa-ring animated fa-4x';
+            if (lnkTxt) lnkTxt.innerHTML = 'Script Error';
+            if (lnkOut) {
+                lnkOut.innerText = ex.message;
+                lnkOut.style.display = 'block';
+                lnkOut.onclick = function () {
+                    if (srcUrl && txtOut && txtOut.value) {
+                        var toggle = srcUrl.style.display != 'none';
+                        srcUrl.style.display = toggle ? 'none' : 'flex';
+                        txtOut.style.display = toggle ? 'flex' : 'none';
+                        txtOut.select();
+                    } else {
+                        window.location.href = url;
+                    }
+                    return false;
+                };
+            }
+
+            console.groupEnd();
+
+            // Fail response
+            respond([{
+                url: url,
+                type: 'failed',
+            }]);
+        }
+
+        function loadScript(url, callback) {
+            if (isBusyLoading) {
+                console.warn(' - Warn: Is Busy Loading...');
+                queue(url, callback);
+                return;
+            }
+            try {
+                isBusyLoading = true;
+
+                var txtUrl = document.getElementById('txtUrl');
+                var lnkBtn = document.getElementById('lnkBtn');
+                var lnkIco = document.getElementById('lnkIco');
+                var lnkTxt = document.getElementById('lnkTxt');
+                var srcUrl = document.getElementById('srcUrl');
+                var txtOut = document.getElementById('txtOut');
+                var lnkOut = document.getElementById('lnkOut');
+
+                if (lnkBtn) lnkBtn.className = 'btn btn-lg btn-default disabled';
+                if (lnkIco) lnkIco.className = 'fa fa-refresh faa-spin animated fa-4x';
+                if (lnkTxt) lnkTxt.innerHTML = 'Downloading';
+
+                if (txtUrl) {
+                    txtUrl.value = url;
+                }
+
+                if (lnkOut) {
+                    lnkOut.style.display = 'none';
+                }
+
+                if (url) {
+                    console.groupCollapsed('   G ', url);
+                    var xhttp = ('XMLHttpRequest' in window) ? new XMLHttpRequest() : xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                    if (xhttp) {
+                        xhttp.onreadystatechange = function () {
+                            try {
+                                console.log(' - Status[' + xhttp.readyState + '][' + xhttp.statusText + ']: ', (xhttp.responseText ? xhttp.responseText.length : '?'));
+                                if (xhttp.readyState == XMLHttpRequest.DONE) {
+                                    if (xhttp.status == 200) {
+                                        var result = xhttp.responseText;
+                                        if (result) {
+                                            handleSuccess(url, result);
+                                        }
+                                    }
+                                    else if (xhttp.status == 400) {
+                                        throw new Error('There was an error 400')
+                                    } else if (xhttp) {
+                                        console.log(' - xhttp', xhttp);
+                                        if (txtOut) txtOut.value = result || '';
+                                        throw new Error((xhttp.statusText || 'Server Retured: ' + xhttp.status))
+                                    }
+                                }
+                            } catch (ex) {
+                                handleException(url, ex);
+                            }
+                        }
+
+                        xhttp.open("GET", url, true);
+                        xhttp.send();
+                    }
+
+                } else {
+                    throw new Error('Enter a valid url');
+                }
+            } catch (ex) {
+                console.error(ex);
+                if (lnkBtn) lnkBtn.className = 'btn btn-lg btn-danger';
+                if (lnkIco) lnkIco.className = 'fa fa-exclamation-circle faa-tada animated fa-4x';
+                if (lnkTxt) lnkTxt.innerHTML = 'Script Error';
+                if (lnkOut) {
+                    lnkOut.innerText = ex.message;
+                    lnkOut.style.display = 'block';
+                    lnkOut.onclick = function () {
+                        alert(ex.message);
+                        window.location.reload(true);
+                        return false;
+                    };
+                }
+            }
+        }
+
+        function respond(resp) {
+            var done = null;
+            var targ = window.opener || window.parent || window;
+            try {
+                var orig = '*';
+                if (targ && targ.postMessage) {
+                    targ.postMessage(resp, orig);
+                    done = true;
+                }
+            } catch (ex) {
+                done = false;
+                console.warn('Warning: ' + ex.message);
+            }
+
+            if (!done && targ) {
+                var method = 'remoteScriptSetResult';
+                if (method in targ) {
+                    targ[method](resp);
+                    done = true;
+                } else {
+                    window.location.href = url;
+                }
+            }
+
+            if (!isBusyLoading && pendingQueue.length) {
+                var itm = pendingQueue.splice(0, 1);
+                loadScript(itm[0].url);
+                return;
+            } else if (done) {
+                setCloser();
+            }
+        }
+
+        function closeFrame() {            
+            if (window.parent) {
+                // Ask parent to close...
+                respond([{
+                    type: 'close',
+                }]);
+            }
+
+            // Fallback, close direct (if possible)...
+            if (!window.closed && window.opener) {
+                window.close();
+            }
+        }
+
+        if (autoLoad) {
+            window.onload = function () {
+                var txtUrl = document.getElementById('txtUrl');
+                if (txtUrl && txtUrl.value) {
+                    // Delay Load 1s
+                    var intv = setInterval(function () {
+                        clearInterval(intv);
+                        loadScript(txtUrl.value);
+                    }, 1000);
+                }
+            }
+        }
+
+        init();
+
+    </script>
+</body>
+</html>
