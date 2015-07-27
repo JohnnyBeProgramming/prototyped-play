@@ -4,7 +4,7 @@ if (typeof appUI === 'undefined') {
     window.appUI = require('./app/ui.js');
 }
 if (typeof remoteScripts === 'undefined') {
-    window.remoteScripts = require('../../../build/node_modules/proto-js-loader/ScriptLoader.js');
+    require('../../../build/node_modules/proto-js-loader/ScriptLoader.js');
 }
 
 // Load the main app with dependencies...
@@ -23,17 +23,23 @@ module.exports = angular.module('myApp', [])
     })
     .factory('$exceptionHandler', ['myAppState', function (myAppState) {
         return function errorCatcherHandler(exception, cause) {
-            var err = new Error('Angular exception');
-            myAppState.lastError = err;
-            console.warn(err);
+            myAppState.lastError = exception;
+            console.warn('Warning: Angular exception:', cause || '');
+            console.error(exception);
+            if (typeof appUI !== 'undefined') {
+                appUI.error(exception);
+            }
         };
     }])
     .factory('errorHttpInterceptor', ['$q', 'myAppState', function ($q, myAppState) {
         return {
             responseError: function responseError(rejection) {
-                var err = new Error('HTTP response error');
-                myAppState.lastError = err;
-                console.warn(err);
+                myAppState.lastError = rejection;
+                console.warn('Warning: HTTP response error');
+                console.error(rejection.config, rejection.status);
+                if (typeof appUI !== 'undefined') {
+                    appUI.error(new Error('Warning: HTTP response error...'));
+                }
                 /*{
                     extra: {
                         config: rejection.config,
@@ -111,7 +117,10 @@ module.exports = angular.module('myApp', [])
             templateUrl: 'views/common/docked/footer.tpl.html'
         };
     })
-
+    .run(function ($rootScope, myAppState)
+    {
+        $rootScope.appState = myAppState;
+    })
 },{}],3:[function(require,module,exports){
 angular.module('myApp').run(['$templateCache', function($templateCache) {
   'use strict';
@@ -165,18 +174,62 @@ var appUI = {
         appUI.status(null, 'fa fa-globe', null);
         if (callback) callback();
     },
-    error: function (err) {
-        appUI.status('red', 'fa fa-exclamation-circle faa-ring animated', '0 0 2px #800');
-        var elem = document.getElementById('__appStatusText');
-        if (elem) {
-            elem.innerText = err.message;
-            elem.style.display = '';
-            elem.style.color = 'darkred';
-            elem.style.padding = '6px';
-            elem.style.fontSize = '24px';
-            elem.style.verticalAlign = 'top';
+    define: function () {
+        // Define container
+        var container = document.getElementById('XssNotifyBox');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'XssNotifyBox';
+            container.className = 'xss-notify';
+            container.style.left = '0';
+            container.style.right = '0';
+            container.style.bottom = '0';
+            container.style.fontSize = '11px';
+            container.style.position = 'absolute';
+            container.style.zIndexx = '2110000000';
+            document.body.appendChild(container);
         }
-        throw err;
+        return container;
+    },
+    message: function (text, icon, css) {
+        var box = appUI.define();
+        var elem = document.createElement('div');
+        if (elem) {
+            elem.innerHTML = (typeof icon !== 'undefined' ? ('<i class="' + icon + '"></i>') + text : text);
+            elem.className = 'bar ' + (css || '');
+            elem.style.display = 'block';
+        }
+
+        var link = document.createElement('a');
+        if (link && elem) {
+            elem.insertBefore(link, elem.firstChild);
+            link.href = '';
+            link.style.cursor = 'pointer';
+            link.style.float = 'right';
+            link.style.marginRight = '8px';
+            link.innerHTML = 'Dismis';
+            link.onclick = function () {
+                if (elem.parentNode) {
+                    elem.parentNode.removeChild(elem);
+                }
+                return false;
+            }
+        }
+
+        if (box) {
+            box.appendChild(elem);
+        }
+        return elem;
+    },
+    error: function (err) {
+        var ico = 'fa fa-exclamation-circle faa-ring animated';
+        appUI.status('red', ico, '0 0 2px #800');
+        appUI.message(err ? (err.message || err) : 'An unknown application error occured.', ico, 'error');
+    },
+    warning: function (message) {
+        var ico = 'fa fa-exclamation-circle faa-tada animated';
+        appUI.status('orange', ico, '0 0 2px #800');
+        appUI.message(message || 'An unknown application warning occured.', ico, 'warn');
     },
     status: function (color, icon, shadow) {
         var elem = document.getElementById('__appIcon');
@@ -198,7 +251,7 @@ var remoteScripts = {
     delay: {
         check: 1 * 1000,
         iframe: 5 * 1000,
-        timeout: 10 * 1000,
+        timeout: 30 * 1000,
     },
     options: {
         containerId: 'XssNotifyBox',
@@ -211,6 +264,7 @@ var remoteScripts = {
         checking: null,
     },
     blocked: false,
+    autoLoad: true,
     urlStates: {},
     windowHandle: null,
     define: function (urls, detect, done, parentElem) {
@@ -424,7 +478,7 @@ var remoteScripts = {
             // Inline script...
             info.remote = false;
             info.jscript = input;
-            info.url = 'cached://' + remoteScripts.guid() + '.js';
+            info.url = 'local://' + remoteScripts.guid() + '.js';
             info.qry = function () {
                 return typeof detect === 'function' ? detect() : false;
             }
@@ -491,15 +545,64 @@ var remoteScripts = {
             if (remoteScripts.blocked && remoteScripts.windowHandle) {
                 remoteScripts.queue(url);
             } else {
-                // Try and load the script normally...
-                var srciptElem = document.createElement('script');
-                if (srciptElem) {
-                    srciptElem.onload = function (evt) {
-                        if (callback) callback(url, true);
+                // Note: This is a slight hackish way of doing things, 
+                //       but if a direct download is faster than loading 
+                //       the script tag (or when script tags are blocked)
+                //       we can rather use the direct result.
+                if (remoteScripts.autoLoad) {
+                    try {
+                        var xhttp = ('XMLHttpRequest' in window) ? new XMLHttpRequest() : xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                        if (xhttp) {
+                            xhttp.onreadystatechange = function () {
+                                if (xhttp.status == 200 && xhttp.readyState == XMLHttpRequest.DONE) {
+                                    var result = xhttp.responseText;
+                                    if (result) {
+                                        // Attach the script directly
+                                        remoteScripts.script(info, result, function (state, elem) {
+                                            if (elem) elem.setAttribute('relx', info.url);
+                                            if (callback && state === true) {
+                                                // Replace current node....
+                                                var parentElem = (info.tag ? info.tag.parentNode : null) || document.body;
+                                                if (parentElem && info.tag) {
+                                                    parentElem.replaceChild(elem, info.tag);
+                                                } else {
+                                                    parentElem.appendChild(elem);
+                                                }
+                                                info.tag = elem;
+
+                                                // Signal that the script was asuccess...
+                                                if (callback) callback(url, true);
+                                            } else if (state === false) {
+                                                // Wait for onload timeout
+                                                if (callback) callback(url, false);
+                                            }
+                                        });
+                                    }
+                                } else if (xhttp.status == 400) {
+                                    remoteScripts.autoLoad = false; // Disable auto loading
+                                    if (callback) callback(url, false, new Error(xhttp.responseText));
+                                }
+                            }
+                            xhttp.open("GET", url, true);
+                            xhttp.send();
+                        }
+                    } catch (ex) {
+                        if (callback) callback(url, false, ex);
+                        remoteScripts.autoLoad = false; // Disable auto loading...
                     }
-                    srciptElem.src = url;
-                    (info.parent || document.body).appendChild(srciptElem);
+                } else {
+                    // Try and load the script normally...
+                    var srciptElem = document.createElement('script');
+                    if (srciptElem) {
+                        srciptElem.onload = function (evt) {
+                            remoteScripts.autoLoad = false; // Disable auto loading
+                            if (callback) callback(url, true);
+                        }
+                        srciptElem.src = url;
+                        (info.parent || document.body).appendChild(srciptElem);
+                    }
                 }
+
 
                 // Set timer to check for timeout
                 var intv = setInterval(function () {
@@ -771,7 +874,7 @@ var remoteScripts = {
 
         var iFrameEnabled = remoteScripts.proxies.iframe;
         if (iFrameEnabled) {
-            console.warn(' - Create IFrame...');
+            console.warn(' - Create iframe...');
             var iframe = document.createElement('iframe');
             {
                 remoteScripts.styleDialog(iframe, width, height);
@@ -897,8 +1000,11 @@ var remoteScripts = {
     },
 };
 
+if (!!window || false) {
+    window.remoteScripts = remoteScripts;
+}
 
-// Expose as an AMD module
+    // Expose as an AMD module
 if (typeof define === 'function' && define.amd) {
     define(remoteScripts);
 }

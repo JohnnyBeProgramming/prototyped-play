@@ -5,17 +5,23 @@ module.exports = angular.module('myApp', [])
     })
     .factory('$exceptionHandler', ['myAppState', function (myAppState) {
         return function errorCatcherHandler(exception, cause) {
-            var err = new Error('Angular exception');
-            myAppState.lastError = err;
-            console.warn(err);
+            myAppState.lastError = exception;
+            console.warn('Warning: Angular exception:', cause || '');
+            console.error(exception);
+            if (typeof appUI !== 'undefined') {
+                appUI.error(exception);
+            }
         };
     }])
     .factory('errorHttpInterceptor', ['$q', 'myAppState', function ($q, myAppState) {
         return {
             responseError: function responseError(rejection) {
-                var err = new Error('HTTP response error');
-                myAppState.lastError = err;
-                console.warn(err);
+                myAppState.lastError = rejection;
+                console.warn('Warning: HTTP response error');
+                console.error(rejection.config, rejection.status);
+                if (typeof appUI !== 'undefined') {
+                    appUI.error(new Error('Warning: HTTP response error...'));
+                }
                 /*{
                     extra: {
                         config: rejection.config,
@@ -92,4 +98,8 @@ module.exports = angular.module('myApp', [])
             transclude: true,
             templateUrl: 'views/common/docked/footer.tpl.html'
         };
+    })
+    .run(function ($rootScope, myAppState)
+    {
+        $rootScope.appState = myAppState;
     })

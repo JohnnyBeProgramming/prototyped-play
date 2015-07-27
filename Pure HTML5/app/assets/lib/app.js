@@ -3,7 +3,7 @@ if (typeof appUI === 'undefined') {
     window.appUI = require('./app/ui.js');
 }
 if (typeof remoteScripts === 'undefined') {
-    window.remoteScripts = require('../../../build/node_modules/proto-js-loader/ScriptLoader.js');
+    require('../../../build/node_modules/proto-js-loader/ScriptLoader.js');
 }
 
 // Load the main app with dependencies...
