@@ -1,0 +1,15 @@
+/Client/JavaScriptImplicitClient/*.user
+/Client/JavaScriptImplicitClient/bin
+/Client/JavaScriptImplicitClient/obj
+/Client/JsImplicitOAuthLibraryDemo/obj
+/Client/JsImplicitOAuthLibraryDemo/bin
+/Client/JsImplicitOAuthLibraryDemo/*.user
+/Client/*.suo
+/Client/packages
+/Server/*.suo
+/Server/SelfHost/obj
+/Server/SelfHost/bin
+/Server/packages
+/Client/.vs/OAuthJS/v14/*.suo
+/Server/.vs/SelfHost/v14/*.suo
+/Client/.vs/config/applicationhost.config
