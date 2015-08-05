@@ -1,0 +1,114 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta html-compile="clear" />
+    <title>Attached!</title>
+    <style>
+        #wrapperBody {
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            z-index: 2110000000;
+        }
+
+        .wrapper-info-bar {
+            width: 100%;
+            display: flex;
+            flex-grow: 0;
+            flex-shrink: 0;
+            flex-direction: row;
+            height: 30px;
+        }
+
+        .wrapper-iframe {
+            width: 100%;
+            display: flex;
+            flex-grow: 1;
+            flex-shrink: 0;
+            flex-direction: row;
+        }
+
+        #wrapperInfoBar {
+            width: 100%;
+        }
+
+        #wrapperIframe {
+            border: none;
+            width: 100%;
+        }
+    </style>
+    <!--
+    <script src="assets/lib/jquery/jquery-2.1.3.min.js"></script>
+    <script src="assets/lib/ng/angular.min.js"></script>
+    -->
+</head>
+<body>
+    <div id="wrapperBody">
+        <div class="wrapper-info-bar">
+            <input type="button" value="Attach" disabled />
+            <input id="wrapperInfoBar" type="text" placeholder="Enter website url" disabled />
+            <input type="button" value="Refresh" onclick="window.location.reload(true)" />
+            <input type="button" value="Close" onclick="window.close()" />
+        </div>
+        <div class="wrapper-iframe">
+            <iframe id="wrapperIframe" src="about:blank"></iframe>
+        </div>
+    </div>
+    <script>
+        try {
+            // Get some context about the current url
+            var currUrl = window.location.href;
+            console.groupCollapsed(' - Attach:', currUrl);
+
+
+            // Update the address bar
+            var infoBar = document.getElementById('wrapperInfoBar');
+            if (infoBar) {
+                infoBar.value = currUrl;
+            }
+
+            // Set up child window and load initial url
+            var baseUrl = window.location.protocol + '//' + window.location.host;
+            var frameUrl = 'about:blank'; //baseUrl + '/i.dont.exist';
+            var iframe = document.getElementById('wrapperIframe');
+            if (iframe) {
+                console.log(' - Loading child frame...', baseUrl);
+                iframe.onload = function () {
+                    try {
+                        console.groupCollapsed(' - Result:', baseUrl);
+
+                        // Get injector
+                        var ident = '$__$';
+                        var loader = (ident in window) ? window[ident] : null;
+                        var xmlHead = loader ? loader.state.head : document.head.innerHTML;
+                        var xmlBody = loader ? loader.state.body : document.body.innerHTML;
+
+                        // Initial page loaded, inject all parts
+                        var doc = iframe.contentWindow.document;
+                        if (doc) {
+                            doc.write('<head><base href="' + baseUrl + '" /></head><body></body>');
+                            doc.head.innerHTML = xmlHead;
+                            doc.body.innerHTML = xmlBody;
+                            console.log(' - Done.');
+                        }
+                    } catch (ex) {
+                        console.error(ex);
+                    } finally {
+                        console.groupEnd();
+                    }
+                };
+                iframe.src = frameUrl;
+            }
+        } catch (ex) {
+            console.error(ex);
+        } finally {
+            console.groupEnd();
+        }
+    </script>
+
+</body>
+</html>
