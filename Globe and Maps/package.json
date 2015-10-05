@@ -1,0 +1,14 @@
+{
+  "name": "proto-globe",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Johnathan Lodder <Johnathan.Lodder@Gmail.com> (http://www.prototyped.info/)",
+  "license": "ISC",
+  "devDependencies": {
+    "ogr2ogr": "^0.5.1"
+  }
+}

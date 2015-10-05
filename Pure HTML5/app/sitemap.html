@@ -1,0 +1,1360 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Sitemap</title>
+    <style>
+        circle.node {
+            cursor: pointer;
+            stroke: #000;
+            stroke-width: .5px;
+            -webkit-filter: drop-shadow( -5px -5px 5px #000 );
+            filter: drop-shadow( -5px -5px 5px #000 ); /* Same syntax as box-shadow */
+        }
+
+        line.link {
+            fill: none;
+            stroke: rgba(120, 120, 120, 0.54);
+            stroke-width: 1.5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="main">
+        <table>
+            <tr>
+                <td>
+                    <div class="intgraph" />
+                </td>
+            </tr>
+        </table>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+    <script>
+        var w = 800,
+            h = 800,
+            node,
+            link,
+            root;
+
+        var force = d3.layout.force()
+            .on("tick", tick)
+            .charge(function (d) { return d._children ? -d.size / 100 : -50; })
+            .linkDistance(function (d) { return d.target._children ? 80 : 30; })
+            .size([w, h - 160]);
+
+        function zoom() {
+            console.log("here", d3.event.translate, d3.event.scale);
+            console.log("transform", d3.event.translate, d3.event.scale);
+            //vis.attr("transform", transform);
+            node.attr("transform", transform);
+            link.attr("transform", transform);
+        }
+
+        function transform(d) {
+            return "translate(" + d3.event.translate + ")" + " scale(" + d3.event.scale + ")";
+        }
+
+        var vis = d3.select(".intgraph").append("svg:svg")
+            .attr("width", w)
+            .attr("height", h)
+          .append("svg:g")
+            .call(d3.behavior.zoom().on("zoom", zoom));
+
+        // the area to zoom
+        var rect = vis.append("rect")
+                .attr("width", w)
+                .attr("height", h)
+                .style("fill", "none")
+                .style("pointer-events", "all");
+
+        function readfile(json) {
+            root = json;
+            root.fixed = true;
+            root.x = w / 2;
+            root.y = h / 2 - 80;
+            update();
+        };
+
+        function update() {
+            var nodes = flatten(root),
+                links = d3.layout.tree().links(nodes);
+
+            // Restart the force layout.
+            force
+                .nodes(nodes)
+                .links(links)
+                .start();
+
+            // Update the links…
+            link = vis.selectAll("line.link")
+                .data(links, function (d) { return d.target.id; });
+
+            // Enter any new links.
+            link.enter().insert("svg:line", ".node")
+                .attr("class", "link")
+                .attr("x1", function (d) { return d.source.x; })
+                .attr("y1", function (d) { return d.source.y; })
+                .attr("x2", function (d) { return d.target.x; })
+                .attr("y2", function (d) { return d.target.y; });
+
+            // Exit any old links.
+            link.exit().remove();
+
+            // Update the nodes
+            node = vis.selectAll("circle.node")
+                .data(nodes, function (d) { return d.id; })
+                .style("fill", color);
+
+            node.transition()
+                .attr("r", function (d) { return d.children ? 4.5 : Math.sqrt(d.size) / 10; });
+
+            // Enter any new nodes.
+            node.enter().append("svg:circle")
+                .attr("class", "node")
+                .attr("cx", function (d) { return d.x; })
+                .attr("cy", function (d) { return d.y; })
+                .attr("r", function (d) { return d.children ? 4.5 : Math.sqrt(d.size) / 10; })
+                .style("fill", color)
+                .on("click", click)
+                .call(drag);
+
+            // Exit any old nodes.
+            node.exit().remove();
+
+        }
+
+        // modifed drag event
+        var drag = d3.behavior.drag()
+                .origin(function (d) { return d; })
+                .on("dragstart", dragstarted)
+                .on("drag", dragged)
+                .on("dragend", dragended);
+
+        function dragstarted(d) {
+            d3.event.sourceEvent.stopPropagation();
+            d3.select(this).classed("dragging", true);
+            force.start();
+        }
+
+        function dragged(d) {
+            d3.select(this).attr("cx", d.x = d3.event.x).attr("cy", d.y = d3.event.y);
+        }
+
+        function dragended(d) {
+            d3.select(this).classed("dragging", false);
+        }
+
+
+        function tick() {
+            link.attr("x1", function (d) { return d.source.x; })
+                .attr("y1", function (d) { return d.source.y; })
+                .attr("x2", function (d) { return d.target.x; })
+                .attr("y2", function (d) { return d.target.y; });
+
+            node.attr("cx", function (d) { return d.x; })
+                .attr("cy", function (d) { return d.y; });
+        }
+
+        // Color leaf nodes orange, and packages white or blue.
+        function color(d) {
+            //  return d._children ? "#3182bd" : d.children ? "#c6dbef" : "#fd8d3c";
+            return d._children ? "#3182bd" : d.children ? "#c6dbef" : d.group;
+        }
+
+        // Toggle children on click.
+        function click(d) {
+            if (d.children) {
+                d._children = d.children;
+                d.children = null;
+            } else {
+                d.children = d._children;
+                d._children = null;
+            }
+            update();
+        }
+
+        // Returns a list of all nodes under the root.
+        function flatten(root) {
+            var nodes = [], i = 0;
+
+            function recurse(node) {
+                if (node.children) node.size = node.children.reduce(function (p, v) { return p + recurse(v); }, 0);
+                if (!node.id) node.id = ++i;
+                nodes.push(node);
+                return node.size;
+            }
+
+            root.size = recurse(root);
+            return nodes;
+        }
+
+
+        var data = {
+            "dist": 0.0,
+            "name": "N1",
+            "children": [
+              {
+                  "dist": 0.000657118732584,
+                  "name": "N2",
+                  "children": [
+                    {
+                        "dist": 0.00193506541936,
+                        "name": "N3",
+                        "children": [
+                          {
+                              "dist": 0.00488832259274,
+                              "name": "N4",
+                              "children": [
+                                {
+                                    "dist": 0.00421186204991,
+                                    "name": "N5",
+                                    "children": [
+                                      {
+                                          "dist": 0.0163437491651,
+                                          "name": "N6",
+                                          "children": [
+                                            {
+                                                "dist": 0.417946674158,
+                                                "group": "blue",
+                                                "name": "CHEMBL1644419",
+                                                "size": 2000.0000000000866
+                                            },
+                                            {
+                                                "dist": 0.00543077796308,
+                                                "name": "N8",
+                                                "children": [
+                                                  {
+                                                      "dist": 0.0297671023157,
+                                                      "name": "N9",
+                                                      "children": [
+                                                        {
+                                                            "dist": 0.359033872667,
+                                                            "group": "red",
+                                                            "name": "ASD03540222",
+                                                            "size": 2000.0000000000866
+                                                        },
+                                                        {
+                                                            "dist": 0.362485114675,
+                                                            "group": "red",
+                                                            "name": "ASD01150858",
+                                                            "size": 2000.0000000000866
+                                                        }
+                                                      ]
+                                                  },
+                                                  {
+                                                      "dist": 0.0224504491652,
+                                                      "name": "N12",
+                                                      "children": [
+                                                        {
+                                                            "dist": 0.00178517153851,
+                                                            "name": "N13",
+                                                            "children": [
+                                                              {
+                                                                  "dist": 0.364388220986,
+                                                                  "group": "blue",
+                                                                  "name": "CHEMBL197161",
+                                                                  "size": 2000.0000000000866
+                                                              },
+                                                              {
+                                                                  "dist": 0.0425243314393,
+                                                                  "name": "N15",
+                                                                  "children": [
+                                                                    {
+                                                                        "dist": 0.336193167816,
+                                                                        "group": "blue",
+                                                                        "name": "CHEMBL1644268",
+                                                                        "size": 2000.0000000000866
+                                                                    },
+                                                                    {
+                                                                        "dist": 0.325677335782,
+                                                                        "group": "red",
+                                                                        "name": "CHEMBL593637",
+                                                                        "size": 2000.0000000000866
+                                                                    }
+                                                                  ]
+                                                              }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "dist": 0.0246952948163,
+                                                            "name": "N18",
+                                                            "children": [
+                                                              {
+                                                                  "dist": 0.358771918732,
+                                                                  "group": "blue",
+                                                                  "name": "CHEMBL569878",
+                                                                  "size": 2000.0000000000866
+                                                              },
+                                                              {
+                                                                  "dist": 0.36317930078,
+                                                                  "group": "blue",
+                                                                  "name": "CHEMBL434267",
+                                                                  "size": 2000.0000000000866
+                                                              }
+                                                            ]
+                                                        }
+                                                      ]
+                                                  }
+                                                ]
+                                            }
+                                          ]
+                                      },
+                                      {
+                                          "dist": 0.00389420127272,
+                                          "name": "N21",
+                                          "children": [
+                                            {
+                                                "dist": 0.010842478752,
+                                                "name": "N22",
+                                                "children": [
+                                                  {
+                                                      "dist": 0.415105380276,
+                                                      "group": "blue",
+                                                      "name": "CHEMBL1275732",
+                                                      "size": 2000.0000000000866
+                                                  },
+                                                  {
+                                                      "dist": 0.0337121910412,
+                                                      "name": "N24",
+                                                      "children": [
+                                                        {
+                                                            "dist": 0.0664262587727,
+                                                            "name": "N25",
+                                                            "children": [
+                                                              {
+                                                                  "dist": 0.315587114957,
+                                                                  "group": "red",
+                                                                  "name": "ASD00170175",
+                                                                  "size": 2000.0000000000866
+                                                              },
+                                                              {
+                                                                  "dist": 0.310918909139,
+                                                                  "group": "red",
+                                                                  "name": "CHEMBL292368",
+                                                                  "size": 2000.0000000000866
+                                                              }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "dist": 0.376684365543,
+                                                            "group": "red",
+                                                            "name": "ASD00170052",
+                                                            "size": 2000.0000000000866
+                                                        }
+                                                      ]
+                                                  }
+                                                ]
+                                            },
+                                            {
+                                                "dist": 0.00704072756384,
+                                                "name": "N29",
+                                                "children": [
+                                                  {
+                                                      "dist": 0.0103358142929,
+                                                      "name": "N30",
+                                                      "children": [
+                                                        {
+                                                            "dist": 0.412662682696,
+                                                            "group": "blue",
+                                                            "name": "CHEMBL14370",
+                                                            "size": 2000.0000000000866
+                                                        },
+                                                        {
+                                                            "dist": 0.427337317304,
+                                                            "group": "blue",
+                                                            "name": "CHEMBL94700",
+                                                            "size": 2000.0000000000866
+                                                        }
+                                                      ]
+                                                  },
+                                                  {
+                                                      "dist": 0.0142382687979,
+                                                      "name": "N33",
+                                                      "children": [
+                                                        {
+                                                            "dist": 0.403816741996,
+                                                            "group": "blue",
+                                                            "name": "CHEMBL545557",
+                                                            "size": 2000.0000000000866
+                                                        },
+                                                        {
+                                                            "dist": 0.0752386947609,
+                                                            "name": "N35",
+                                                            "children": [
+                                                              {
+                                                                  "dist": 0.316746014667,
+                                                                  "group": "blue",
+                                                                  "name": "CHEMBL506342",
+                                                                  "size": 2000.0000000000866
+                                                              },
+                                                              {
+                                                                  "dist": 0.314832932701,
+                                                                  "group": "red",
+                                                                  "name": "CHEMBL1256402",
+                                                                  "size": 2000.0000000000866
+                                                              }
+                                                            ]
+                                                        }
+                                                      ]
+                                                  }
+                                                ]
+                                            }
+                                          ]
+                                      }
+                                    ]
+                                },
+                                {
+                                    "dist": 0.00663275326859,
+                                    "name": "N38",
+                                    "children": [
+                                      {
+                                          "dist": 0.00744960316407,
+                                          "name": "N39",
+                                          "children": [
+                                            {
+                                                "dist": 0.102361481351,
+                                                "name": "N40",
+                                                "children": [
+                                                  {
+                                                      "dist": 0.310742637031,
+                                                      "group": "blue",
+                                                      "name": "CHEMBL280538",
+                                                      "size": 2000.0000000000866
+                                                  },
+                                                  {
+                                                      "dist": 0.306904421793,
+                                                      "group": "blue",
+                                                      "name": "CHEMBL169162",
+                                                      "size": 2000.0000000000866
+                                                  }
+                                                ]
+                                            },
+                                            {
+                                                "dist": 0.0759764692427,
+                                                "name": "N43",
+                                                "children": [
+                                                  {
+                                                      "dist": 0.336333959798,
+                                                      "group": "blue",
+                                                      "name": "CHEMBL106998",
+                                                      "size": 2000.0000000000866
+                                                  },
+                                                  {
+                                                      "dist": 0.0488218544991,
+                                                      "name": "N45",
+                                                      "children": [
+                                                        {
+                                                            "dist": 0.283929982949,
+                                                            "group": "blue",
+                                                            "name": "CHEMBL104497",
+                                                            "size": 2000.0000000000866
+                                                        },
+                                                        {
+                                                            "dist": 0.0978762398828,
+                                                            "name": "N47",
+                                                            "children": [
+                                                              {
+                                                                  "dist": 0.192182622198,
+                                                                  "group": "blue",
+                                                                  "name": "CHEMBL110712",
+                                                                  "size": 2000.0000000000866
+                                                              },
+                                                              {
+                                                                  "dist": 0.194914151996,
+                                                                  "group": "blue",
+                                                                  "name": "CHEMBL107020",
+                                                                  "size": 2000.0000000000866
+                                                              }
+                                                            ]
+                                                        }
+                                                      ]
+                                                  }
+                                                ]
+                                            }
+                                          ]
+                                      },
+                                      {
+                                          "dist": 0.0140453361152,
+                                          "name": "N50",
+                                          "children": [
+                                            {
+                                                "dist": 0.0122532923484,
+                                                "name": "N51",
+                                                "children": [
+                                                  {
+                                                      "dist": 0.385413790633,
+                                                      "group": "blue",
+                                                      "name": "CHEMBL98350",
+                                                      "size": 2000.0000000000866
+                                                  },
+                                                  {
+                                                      "dist": 0.389987278886,
+                                                      "group": "red",
+                                                      "name": "ASD03490002",
+                                                      "size": 2000.0000000000866
+                                                  }
+                                                ]
+                                            },
+                                            {
+                                                "dist": 0.00692857500102,
+                                                "name": "N54",
+                                                "children": [
+                                                  {
+                                                      "dist": 0.0413446767057,
+                                                      "name": "N55",
+                                                      "children": [
+                                                        {
+                                                            "dist": 0.374767246554,
+                                                            "group": "blue",
+                                                            "name": "CHEMBL214126",
+                                                            "size": 2000.0000000000866
+                                                        },
+                                                        {
+                                                            "dist": 0.354962483176,
+                                                            "group": "blue",
+                                                            "name": "CHEMBL1163538",
+                                                            "size": 2000.0000000000866
+                                                        }
+                                                      ]
+                                                  },
+                                                  {
+                                                      "dist": 0.019474760824,
+                                                      "name": "N58",
+                                                      "children": [
+                                                        {
+                                                            "dist": 0.0286094618224,
+                                                            "name": "N59",
+                                                            "children": [
+                                                              {
+                                                                  "dist": 0.356530510298,
+                                                                  "group": "red",
+                                                                  "name": "ASD01910877",
+                                                                  "size": 2000.0000000000866
+                                                              },
+                                                              {
+                                                                  "dist": 0.347611501536,
+                                                                  "group": "red",
+                                                                  "name": "ASD01910707",
+                                                                  "size": 2000.0000000000866
+                                                              }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "dist": 0.0552444765021,
+                                                            "name": "N62",
+                                                            "children": [
+                                                              {
+                                                                  "dist": 0.323390715019,
+                                                                  "group": "red",
+                                                                  "name": "ASD01910642",
+                                                                  "size": 2000.0000000000866
+                                                              },
+                                                              {
+                                                                  "dist": 0.0584813460265,
+                                                                  "name": "N64",
+                                                                  "children": [
+                                                                    {
+                                                                        "dist": 0.261153855955,
+                                                                        "group": "red",
+                                                                        "name": "ASD01910352",
+                                                                        "size": 2000.0000000000866
+                                                                    },
+                                                                    {
+                                                                        "dist": 0.0448246697753,
+                                                                        "name": "N66",
+                                                                        "children": [
+                                                                          {
+                                                                              "dist": 0.219398057602,
+                                                                              "group": "red",
+                                                                              "name": "ASD01910382",
+                                                                              "size": 2000.0000000000866
+                                                                          },
+                                                                          {
+                                                                              "dist": 0.231421614529,
+                                                                              "group": "red",
+                                                                              "name": "ASD01910377",
+                                                                              "size": 2000.0000000000866
+                                                                          }
+                                                                        ]
+                                                                    }
+                                                                  ]
+                                                              }
+                                                            ]
+                                                        }
+                                                      ]
+                                                  }
+                                                ]
+                                            }
+                                          ]
+                                      }
+                                    ]
+                                }
+                              ]
+                          },
+                          {
+                              "dist": 0.00486313697635,
+                              "name": "N69",
+                              "children": [
+                                {
+                                    "dist": 0.00266396390242,
+                                    "name": "N70",
+                                    "children": [
+                                      {
+                                          "dist": 0.00712314358253,
+                                          "name": "N71",
+                                          "children": [
+                                            {
+                                                "dist": 0.017035352532,
+                                                "name": "N72",
+                                                "children": [
+                                                  {
+                                                      "dist": 0.431819235518,
+                                                      "group": "blue",
+                                                      "name": "CHEMBL569922",
+                                                      "size": 2000.0000000000866
+                                                  },
+                                                  {
+                                                      "dist": 0.0176977640853,
+                                                      "name": "N74",
+                                                      "children": [
+                                                        {
+                                                            "dist": 0.381412826817,
+                                                            "group": "red",
+                                                            "name": "ASD03540532",
+                                                            "size": 2000.0000000000866
+                                                        },
+                                                        {
+                                                            "dist": 0.0792669048059,
+                                                            "name": "N76",
+                                                            "children": [
+                                                              {
+                                                                  "dist": 0.143131822924,
+                                                                  "name": "N77",
+                                                                  "children": [
+                                                                    {
+                                                                        "dist": 0.18022128813,
+                                                                        "group": "red",
+                                                                        "name": "ASD03240160",
+                                                                        "size": 2000.0000000000866
+                                                                    },
+                                                                    {
+                                                                        "dist": 0.177244775218,
+                                                                        "group": "red",
+                                                                        "name": "ASD03240119",
+                                                                        "size": 2000.0000000000866
+                                                                    }
+                                                                  ]
+                                                              },
+                                                              {
+                                                                  "dist": 0.316635145402,
+                                                                  "group": "red",
+                                                                  "name": "ASD03240059",
+                                                                  "size": 2000.0000000000866
+                                                              }
+                                                            ]
+                                                        }
+                                                      ]
+                                                  }
+                                                ]
+                                            },
+                                            {
+                                                "dist": 0.0209892092185,
+                                                "name": "N81",
+                                                "children": [
+                                                  {
+                                                      "dist": 0.403980023717,
+                                                      "group": "blue",
+                                                      "name": "CHEMBL36",
+                                                      "size": 2000.0000000000866
+                                                  },
+                                                  {
+                                                      "dist": 0.157675836443,
+                                                      "name": "N83",
+                                                      "children": [
+                                                        {
+                                                            "dist": 0.238887761289,
+                                                            "group": "red",
+                                                            "name": "ASD01150132",
+                                                            "size": 2000.0000000000866
+                                                        },
+                                                        {
+                                                            "dist": 0.227778905378,
+                                                            "group": "red",
+                                                            "name": "ASD01150124",
+                                                            "size": 2000.0000000000866
+                                                        }
+                                                      ]
+                                                  }
+                                                ]
+                                            }
+                                          ]
+                                      },
+                                      {
+                                          "dist": 0.0156642615651,
+                                          "name": "N86",
+                                          "children": [
+                                            {
+                                                "dist": 0.425920086973,
+                                                "group": "red",
+                                                "name": "CHEMBL1631469",
+                                                "size": 2000.0000000000866
+                                            },
+                                            {
+                                                "dist": 0.402847036314,
+                                                "group": "red",
+                                                "name": "CHEMBL193129",
+                                                "size": 2000.0000000000866
+                                            }
+                                          ]
+                                      }
+                                    ]
+                                },
+                                {
+                                    "dist": 0.00421483698012,
+                                    "name": "N89",
+                                    "children": [
+                                      {
+                                          "dist": 0.0043070468369,
+                                          "name": "N90",
+                                          "children": [
+                                            {
+                                                "dist": 0.00835417639527,
+                                                "name": "N91",
+                                                "children": [
+                                                  {
+                                                      "dist": 0.404555537487,
+                                                      "group": "red",
+                                                      "name": "ASD01870043",
+                                                      "size": 2000.0000000000866
+                                                  },
+                                                  {
+                                                      "dist": 0.164297965822,
+                                                      "name": "N93",
+                                                      "children": [
+                                                        {
+                                                            "dist": 0.0477219166097,
+                                                            "name": "N94",
+                                                            "children": [
+                                                              {
+                                                                  "dist": 0.203125549441,
+                                                                  "group": "red",
+                                                                  "name": "ASD01150607",
+                                                                  "size": 2000.0000000000866
+                                                              },
+                                                              {
+                                                                  "dist": 0.190813844498,
+                                                                  "group": "red",
+                                                                  "name": "ASD01150621",
+                                                                  "size": 2000.0000000000866
+                                                              }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "dist": 0.239277062544,
+                                                            "group": "red",
+                                                            "name": "ASD01150644",
+                                                            "size": 2000.0000000000866
+                                                        }
+                                                      ]
+                                                  }
+                                                ]
+                                            },
+                                            {
+                                                "dist": 0.452768694001,
+                                                "group": "red",
+                                                "name": "ASD01820175",
+                                                "size": 2000.0000000000866
+                                            }
+                                          ]
+                                      },
+                                      {
+                                          "dist": 0.0112026863169,
+                                          "name": "N99",
+                                          "children": [
+                                            {
+                                                "dist": 0.0179292494313,
+                                                "name": "N100",
+                                                "children": [
+                                                  {
+                                                      "dist": 0.449508814136,
+                                                      "group": "blue",
+                                                      "name": "CHEMBL161",
+                                                      "size": 2000.0000000000866
+                                                  },
+                                                  {
+                                                      "dist": 0.430009258153,
+                                                      "group": "blue",
+                                                      "name": "CHEMBL177325",
+                                                      "size": 2000.0000000000866
+                                                  }
+                                                ]
+                                            },
+                                            {
+                                                "dist": 0.00749325847662,
+                                                "name": "N103",
+                                                "children": [
+                                                  {
+                                                      "dist": 0.0191549814112,
+                                                      "name": "N104",
+                                                      "children": [
+                                                        {
+                                                            "dist": 0.00394532105359,
+                                                            "name": "N105",
+                                                            "children": [
+                                                              {
+                                                                  "dist": 0.180581725235,
+                                                                  "name": "N106",
+                                                                  "children": [
+                                                                    {
+                                                                        "dist": 0.271499482535,
+                                                                        "group": "red",
+                                                                        "name": "ASD00030001",
+                                                                        "size": 2000.0000000000866
+                                                                    },
+                                                                    {
+                                                                        "dist": 0.270873398821,
+                                                                        "group": "blue",
+                                                                        "name": "CHEMBL605426",
+                                                                        "size": 2000.0000000000866
+                                                                    }
+                                                                  ]
+                                                              },
+                                                              {
+                                                                  "dist": 0.0235880776046,
+                                                                  "name": "N109",
+                                                                  "children": [
+                                                                    {
+                                                                        "dist": 0.459272841105,
+                                                                        "group": "blue",
+                                                                        "name": "CHEMBL1159492",
+                                                                        "size": 2000.0000000000866
+                                                                    },
+                                                                    {
+                                                                        "dist": 0.407836793446,
+                                                                        "group": "blue",
+                                                                        "name": "CHEMBL1253217",
+                                                                        "size": 2000.0000000000866
+                                                                    }
+                                                                  ]
+                                                              }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "dist": 0.00630757753668,
+                                                            "name": "N112",
+                                                            "children": [
+                                                              {
+                                                                  "dist": 0.422149553229,
+                                                                  "group": "blue",
+                                                                  "name": "CHEMBL112094",
+                                                                  "size": 2000.0000000000866
+                                                              },
+                                                              {
+                                                                  "dist": 0.0164477825315,
+                                                                  "name": "N114",
+                                                                  "children": [
+                                                                    {
+                                                                        "dist": 0.43961634091,
+                                                                        "group": "blue",
+                                                                        "name": "CHEMBL1242194",
+                                                                        "size": 2000.0000000000866
+                                                                    },
+                                                                    {
+                                                                        "dist": 0.00287213178797,
+                                                                        "name": "N116",
+                                                                        "children": [
+                                                                          {
+                                                                              "dist": 0.446215329842,
+                                                                              "group": "red",
+                                                                              "name": "ASD01140007",
+                                                                              "size": 2000.0000000000866
+                                                                          },
+                                                                          {
+                                                                              "dist": 0.0316132645081,
+                                                                              "name": "N118",
+                                                                              "children": [
+                                                                                {
+                                                                                    "dist": 0.421840069451,
+                                                                                    "group": "red",
+                                                                                    "name": "ASD01240014",
+                                                                                    "size": 2000.0000000000866
+                                                                                },
+                                                                                {
+                                                                                    "dist": 0.223004003737,
+                                                                                    "name": "N120",
+                                                                                    "children": [
+                                                                                      {
+                                                                                          "dist": 0.199406979315,
+                                                                                          "group": "red",
+                                                                                          "name": "CHEMBL210952",
+                                                                                          "size": 2000.0000000000866
+                                                                                      },
+                                                                                      {
+                                                                                          "dist": 0.0868111464439,
+                                                                                          "name": "N122",
+                                                                                          "children": [
+                                                                                            {
+                                                                                                "dist": 0.11001989364,
+                                                                                                "group": "red",
+                                                                                                "name": "CHEMBL164151",
+                                                                                                "size": 2000.0000000000866
+                                                                                            },
+                                                                                            {
+                                                                                                "dist": 0.00762716518379,
+                                                                                                "name": "N124",
+                                                                                                "children": [
+                                                                                                  {
+                                                                                                      "dist": 0.103368454316,
+                                                                                                      "group": "red",
+                                                                                                      "name": "CHEMBL160082",
+                                                                                                      "size": 2000.0000000000866
+                                                                                                  },
+                                                                                                  {
+                                                                                                      "dist": 0.100713178337,
+                                                                                                      "group": "red",
+                                                                                                      "name": "ASD01140069",
+                                                                                                      "size": 2000.0000000000866
+                                                                                                  }
+                                                                                                ]
+                                                                                            }
+                                                                                          ]
+                                                                                      }
+                                                                                    ]
+                                                                                }
+                                                                              ]
+                                                                          }
+                                                                        ]
+                                                                    }
+                                                                  ]
+                                                              }
+                                                            ]
+                                                        }
+                                                      ]
+                                                  },
+                                                  {
+                                                      "dist": 0.00196892993007,
+                                                      "name": "N127",
+                                                      "children": [
+                                                        {
+                                                            "dist": 0.028741115577,
+                                                            "name": "N128",
+                                                            "children": [
+                                                              {
+                                                                  "dist": 0.0202547402053,
+                                                                  "name": "N129",
+                                                                  "children": [
+                                                                    {
+                                                                        "dist": 0.376333098632,
+                                                                        "group": "blue",
+                                                                        "name": "CHEMBL64805",
+                                                                        "size": 2000.0000000000866
+                                                                    },
+                                                                    {
+                                                                        "dist": 0.030510727021,
+                                                                        "name": "N131",
+                                                                        "children": [
+                                                                          {
+                                                                              "dist": 0.0955859732955,
+                                                                              "name": "N132",
+                                                                              "children": [
+                                                                                {
+                                                                                    "dist": 0.122623622321,
+                                                                                    "name": "N133",
+                                                                                    "children": [
+                                                                                      {
+                                                                                          "dist": 0.18523433413,
+                                                                                          "group": "blue",
+                                                                                          "name": "CHEMBL1688618",
+                                                                                          "size": 2000.0000000000866
+                                                                                      },
+                                                                                      {
+                                                                                          "dist": 0.186387287491,
+                                                                                          "group": "blue",
+                                                                                          "name": "CHEMBL1688617",
+                                                                                          "size": 2000.0000000000866
+                                                                                      }
+                                                                                    ]
+                                                                                },
+                                                                                {
+                                                                                    "dist": 0.27745513742,
+                                                                                    "group": "blue",
+                                                                                    "name": "CHEMBL1688614",
+                                                                                    "size": 2000.0000000000866
+                                                                                }
+                                                                              ]
+                                                                          },
+                                                                          {
+                                                                              "dist": 0.0298378661128,
+                                                                              "name": "N137",
+                                                                              "children": [
+                                                                                {
+                                                                                    "dist": 0.0644413455586,
+                                                                                    "name": "N138",
+                                                                                    "children": [
+                                                                                      {
+                                                                                          "dist": 0.296954839323,
+                                                                                          "group": "red",
+                                                                                          "name": "CHEMBL217406",
+                                                                                          "size": 2000.0000000000866
+                                                                                      },
+                                                                                      {
+                                                                                          "dist": 0.33655301408,
+                                                                                          "group": "blue",
+                                                                                          "name": "CHEMBL1082286",
+                                                                                          "size": 2000.0000000000866
+                                                                                      }
+                                                                                    ]
+                                                                                },
+                                                                                {
+                                                                                    "dist": 0.0556659644957,
+                                                                                    "name": "N141",
+                                                                                    "children": [
+                                                                                      {
+                                                                                          "dist": 0.326817305279,
+                                                                                          "group": "blue",
+                                                                                          "name": "CHEMBL93005",
+                                                                                          "size": 2000.0000000000866
+                                                                                      },
+                                                                                      {
+                                                                                          "dist": 0.292230313769,
+                                                                                          "group": "blue",
+                                                                                          "name": "CHEMBL359256",
+                                                                                          "size": 2000.0000000000866
+                                                                                      }
+                                                                                    ]
+                                                                                }
+                                                                              ]
+                                                                          }
+                                                                        ]
+                                                                    }
+                                                                  ]
+                                                              },
+                                                              {
+                                                                  "dist": 0.434046496815,
+                                                                  "group": "blue",
+                                                                  "name": "CHEMBL405290",
+                                                                  "size": 2000.0000000000866
+                                                              }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "dist": 0.0065713509037,
+                                                            "name": "N145",
+                                                            "children": [
+                                                              {
+                                                                  "dist": 0.434943366462,
+                                                                  "group": "red",
+                                                                  "name": "CHEMBL568252",
+                                                                  "size": 2000.0000000000866
+                                                              },
+                                                              {
+                                                                  "dist": 0.0104435942452,
+                                                                  "name": "N147",
+                                                                  "children": [
+                                                                    {
+                                                                        "dist": 0.00835228400199,
+                                                                        "name": "N148",
+                                                                        "children": [
+                                                                          {
+                                                                              "dist": 0.00932545417162,
+                                                                              "name": "N149",
+                                                                              "children": [
+                                                                                {
+                                                                                    "dist": 0.476885276437,
+                                                                                    "group": "blue",
+                                                                                    "name": "CHEMBL77818",
+                                                                                    "size": 2000.0000000000866
+                                                                                },
+                                                                                {
+                                                                                    "dist": 0.00571469625281,
+                                                                                    "name": "N151",
+                                                                                    "children": [
+                                                                                      {
+                                                                                          "dist": 0.453608750105,
+                                                                                          "group": "red",
+                                                                                          "name": "ASD01240013",
+                                                                                          "size": 2000.0000000000866
+                                                                                      },
+                                                                                      {
+                                                                                          "dist": 0.481875120863,
+                                                                                          "group": "red",
+                                                                                          "name": "ASD01240008",
+                                                                                          "size": 2000.0000000000866
+                                                                                      }
+                                                                                    ]
+                                                                                }
+                                                                              ]
+                                                                          },
+                                                                          {
+                                                                              "dist": 0.452215864151,
+                                                                              "group": "blue",
+                                                                              "name": "CHEMBL152775",
+                                                                              "size": 2000.0000000000866
+                                                                          }
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "dist": 0.0531270214706,
+                                                                        "name": "N155",
+                                                                        "children": [
+                                                                          {
+                                                                              "dist": 0.384619278575,
+                                                                              "group": "blue",
+                                                                              "name": "CHEMBL42990",
+                                                                              "size": 2000.0000000000866
+                                                                          },
+                                                                          {
+                                                                              "dist": 0.109137943029,
+                                                                              "name": "N157",
+                                                                              "children": [
+                                                                                {
+                                                                                    "dist": 0.314179370817,
+                                                                                    "group": "blue",
+                                                                                    "name": "CHEMBL329663",
+                                                                                    "size": 2000.0000000000866
+                                                                                },
+                                                                                {
+                                                                                    "dist": 0.31293927325,
+                                                                                    "group": "blue",
+                                                                                    "name": "CHEMBL43480",
+                                                                                    "size": 2000.0000000000866
+                                                                                }
+                                                                              ]
+                                                                          }
+                                                                        ]
+                                                                    }
+                                                                  ]
+                                                              }
+                                                            ]
+                                                        }
+                                                      ]
+                                                  }
+                                                ]
+                                            }
+                                          ]
+                                      }
+                                    ]
+                                }
+                              ]
+                          }
+                        ]
+                    },
+                    {
+                        "dist": 0.00404763946455,
+                        "name": "N160",
+                        "children": [
+                          {
+                              "dist": 0.0157385566474,
+                              "name": "N161",
+                              "children": [
+                                {
+                                    "dist": 0.401543702573,
+                                    "group": "red",
+                                    "name": "ASD01140129",
+                                    "size": 2000.0000000000866
+                                },
+                                {
+                                    "dist": 0.0755084512723,
+                                    "name": "N163",
+                                    "children": [
+                                      {
+                                          "dist": 0.319840091482,
+                                          "group": "red",
+                                          "name": "CHEMBL1093224",
+                                          "size": 2000.0000000000866
+                                      },
+                                      {
+                                          "dist": 0.308066885262,
+                                          "group": "red",
+                                          "name": "CHEMBL608388",
+                                          "size": 2000.0000000000866
+                                      }
+                                    ]
+                                }
+                              ]
+                          },
+                          {
+                              "dist": 0.00755408096342,
+                              "name": "N166",
+                              "children": [
+                                {
+                                    "dist": 0.0033676858018,
+                                    "name": "N167",
+                                    "children": [
+                                      {
+                                          "dist": 0.40215814721,
+                                          "group": "red",
+                                          "name": "CHEMBL1682815",
+                                          "size": 2000.0000000000866
+                                      },
+                                      {
+                                          "dist": 0.416023670972,
+                                          "group": "red",
+                                          "name": "ASD02030020",
+                                          "size": 2000.0000000000866
+                                      }
+                                    ]
+                                },
+                                {
+                                    "dist": 0.0170174403068,
+                                    "name": "N170",
+                                    "children": [
+                                      {
+                                          "dist": 0.410829434877,
+                                          "group": "red",
+                                          "name": "ASD03750001",
+                                          "size": 2000.0000000000866
+                                      },
+                                      {
+                                          "dist": 0.402603400944,
+                                          "group": "blue",
+                                          "name": "CHEMBL367448",
+                                          "size": 2000.0000000000866
+                                      }
+                                    ]
+                                }
+                              ]
+                          }
+                        ]
+                    }
+                  ]
+              },
+              {
+                  "dist": 0.0132901189211,
+                  "name": "N173",
+                  "children": [
+                    {
+                        "dist": 0.449672560513,
+                        "group": "blue",
+                        "name": "CHEMBL536043",
+                        "size": 2000.0000000000866
+                    },
+                    {
+                        "dist": 0.00727513555206,
+                        "name": "N175",
+                        "children": [
+                          {
+                              "dist": 0.440091307902,
+                              "group": "red",
+                              "name": "ASD02550002",
+                              "size": 2000.0000000000866
+                          },
+                          {
+                              "dist": 0.0927686893573,
+                              "name": "N177",
+                              "children": [
+                                {
+                                    "dist": 0.014955521935,
+                                    "name": "N178",
+                                    "children": [
+                                      {
+                                          "dist": 0.311954314471,
+                                          "group": "blue",
+                                          "name": "CHEMBL43045",
+                                          "size": 2000.0000000000866
+                                      },
+                                      {
+                                          "dist": 0.00696492532527,
+                                          "name": "N180",
+                                          "children": [
+                                            {
+                                                "dist": 0.301944689875,
+                                                "group": "blue",
+                                                "name": "CHEMBL40964",
+                                                "size": 2000.0000000000866
+                                            },
+                                            {
+                                                "dist": 0.287528994335,
+                                                "group": "blue",
+                                                "name": "CHEMBL575639",
+                                                "size": 2000.0000000000866
+                                            }
+                                          ]
+                                      }
+                                    ]
+                                },
+                                {
+                                    "dist": 0.314084784453,
+                                    "group": "blue",
+                                    "name": "CHEMBL576580",
+                                    "size": 2000.0000000000866
+                                }
+                              ]
+                          }
+                        ]
+                    }
+                  ]
+              },
+              {
+                  "dist": 0.00650234070829,
+                  "name": "N184",
+                  "children": [
+                    {
+                        "dist": 0.0139874011009,
+                        "name": "N185",
+                        "children": [
+                          {
+                              "dist": 0.414816670629,
+                              "group": "red",
+                              "name": "CHEMBL1672251",
+                              "size": 2000.0000000000866
+                          },
+                          {
+                              "dist": 0.403365147553,
+                              "group": "red",
+                              "name": "ASD03090518",
+                              "size": 2000.0000000000866
+                          }
+                        ]
+                    },
+                    {
+                        "dist": 0.0131961255741,
+                        "name": "N188",
+                        "children": [
+                          {
+                              "dist": 0.0335619415415,
+                              "name": "N189",
+                              "children": [
+                                {
+                                    "dist": 0.416673216304,
+                                    "group": "blue",
+                                    "name": "CHEMBL390728",
+                                    "size": 2000.0000000000866
+                                },
+                                {
+                                    "dist": 0.409413740217,
+                                    "group": "blue",
+                                    "name": "CHEMBL296323",
+                                    "size": 2000.0000000000866
+                                }
+                              ]
+                          },
+                          {
+                              "dist": 0.0159243993477,
+                              "name": "N192",
+                              "children": [
+                                {
+                                    "dist": 0.383532409839,
+                                    "group": "red",
+                                    "name": "ASD00740014",
+                                    "size": 2000.0000000000866
+                                },
+                                {
+                                    "dist": 0.398780515331,
+                                    "group": "red",
+                                    "name": "ASD03090217",
+                                    "size": 2000.0000000000866
+                                }
+                              ]
+                          }
+                        ]
+                    }
+                  ]
+              }
+            ]
+        };
+
+        readfile(data);
+    </script>
+</body>
+</html>
