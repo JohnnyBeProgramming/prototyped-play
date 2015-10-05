@@ -17,6 +17,10 @@ h2 a, h2 a:hover {
     text-shadow: 0 0 2px #ff0000;
 }
 
+.text-inactive {
+    color: gray;
+}
+
 .large-thumb {
     font-size: 48px;
     text-align: center;
@@ -24,4 +28,32 @@ h2 a, h2 a:hover {
 
 textarea.form-control {
     width: 100%;
+}
+
+.ellipses {
+    width: 250px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.label-fixed {
+    width: 64px;
+    display: inline-block;
+}
+
+.text-report {
+    font-family: Courier New, Courier, monospace;
+    font-size: 11px;
+    overflow: auto;
+    overflow-wrap: normal;
+}
+
+.compact-list {
+    padding: 3px;
+}
+
+.top-controls {
+    margin: 0;
+    font-size: 18px;
 }

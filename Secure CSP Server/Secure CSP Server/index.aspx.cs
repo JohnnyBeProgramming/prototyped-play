@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Web;
@@ -10,46 +12,32 @@ namespace Secure_CSP_Server
 {
     public partial class index : System.Web.UI.Page
     {
-
-        public class ContentSecurityOptions
+        protected string HeaderCSP
         {
-            public bool Enabled { get; set; }
-
-            public string BaseUrl { get; set; }
-            public bool BaseUrlEnabled { get; set; }
-
-            public string ReportUrl { get; set; }
-            public bool ReportUrlEnabled { get; set; }
-
-            public ContentSecuritySources Defaults { get; set; }
-            public List<ContentSecuritySources> Sources { get; set; }
-
-            public int ViewIndex { get; set; }
-        }
-
-        public class ContentSecuritySources
-        {
-            public bool Enabled { get; set; }
-            public string Ident { get; set; }
-            public string Value { get; set; }
-        }
-
-        public class ContentSecurityReport
-        {
-            public string RawText { get; set; }
-            public DateTime CreatedAt { get; set; }
-
-            public ContentSecurityReport(string input)
+            get
             {
-                ParseInput(input);
-            }
+                var data = "";
+                if (Options.Enabled)
+                {
+                    if (Options.ReportUrlEnabled)
+                    {
+                        data += string.Format("report-uri {0};\r\n", Options.ReportUrl);
+                    }
 
-            private void ParseInput(string input)
-            {
-                RawText = input;
-                CreatedAt = DateTime.Now;
+                    if (!string.IsNullOrEmpty(Options.Defaults.Value))
+                    {
+                        data += string.Format("{0}-src ", Options.Defaults.Ident) + Options.Defaults.Value.Replace("\r\n", " ") + ";\r\n";
+                    }
+                    foreach (var source in Options.Sources.Where(s => s.Enabled))
+                    {
+                        if (!string.IsNullOrEmpty(source.Value))
+                        {
+                            data += string.Format("{0}-src ", source.Ident) + source.Value.Replace("\r\n", " ") + ";\r\n";
+                        }
+                    }
+                }
+                return data;
             }
-
         }
 
         protected ContentSecurityOptions Options
@@ -59,12 +47,14 @@ namespace Secure_CSP_Server
                 var opts = Session["CSP_OPTIONS"] as ContentSecurityOptions;
                 if (opts == null)
                 {
+                    var sessionId = Guid.NewGuid();
                     opts = new ContentSecurityOptions
                     {
                         Enabled = true,
+                        SessionID = sessionId,
                         BaseUrl = @"\",
                         BaseUrlEnabled = false,
-                        ReportUrl = "/index.aspx?report=tracker&ip=" + Request.UserHostName,
+                        ReportUrl = "/index.aspx?report=tracker&session=" + sessionId,
                         ReportUrlEnabled = true,
                         Defaults = new ContentSecuritySources
                         {
@@ -77,7 +67,7 @@ namespace Secure_CSP_Server
 https://cdnjs.cloudflare.com
 https://maxcdn.bootstrapcdn.com
 https://code.jquery.com", Enabled=true },
-                            new ContentSecuritySources { Ident = "style", Value = @"'self' 
+                            new ContentSecuritySources { Ident = "style", Value = @"'self' 'unsafe-inline'
 https://cdnjs.cloudflare.com
 https://maxcdn.bootstrapcdn.com", Enabled=true },
                             new ContentSecuritySources { Ident = "font", Value = @"https://cdnjs.cloudflare.com
@@ -95,29 +85,6 @@ https://maxcdn.bootstrapcdn.com", Enabled=true },
             }
         }
 
-        protected string HeaderCSP
-        {
-            get
-            {
-                var data = "";
-                if (Options.Enabled)
-                {
-                    if (!string.IsNullOrEmpty(Options.Defaults.Value))
-                    {
-                        data += string.Format("{0}-src ", Options.Defaults.Ident) + Options.Defaults.Value.Replace("\r\n", " ") + ";\r\n";
-                    }
-                    foreach (var source in Options.Sources.Where(s => s.Enabled))
-                    {
-                        if (!string.IsNullOrEmpty(source.Value))
-                        {
-                            data += string.Format("{0}-src ", source.Ident) + source.Value.Replace("\r\n", " ") + ";\r\n";
-                        }
-                    }
-                }
-                return data;
-            }
-        }
-
         protected static List<ContentSecurityReport> Reports = new List<ContentSecurityReport>();
 
         protected void Page_Load(object sender, EventArgs e)
@@ -132,20 +99,47 @@ https://maxcdn.bootstrapcdn.com", Enabled=true },
                     if (reportType != null) GenerateReport();
                     return;
                 }
+                else if (Request.Params["reset"] != null)
+                {
+                    ResetOptions();
+                }
+                else if (Request.Params["clear"] != null)
+                {
+                    ClearReports(null);
+                    Response.Redirect(Request.Path, true);
+                }
                 else if (!Page.IsPostBack)
                 {
                     InitUI(Options);
-                }
-
-                if (Options.Enabled)
-                {
-                    Response.Headers.Add("Content-Security-Policy", HeaderCSP.Replace("\r\n", " ").Replace("\n", " "));
-                }
+                }                
             }
             catch (Exception ex)
             {
                 throw ex;
             }
+        }
+
+        protected override void OnPreRenderComplete(EventArgs e)
+        {
+            base.OnPreRenderComplete(e);
+
+            if (Options.Enabled)
+            {
+                Response.Headers.Add("Content-Security-Policy", HeaderCSP.Replace("\r\n", " ").Replace("\n", " "));
+            }
+        }
+
+        private void ClearReports(string sessionID)
+        {
+            Reports.RemoveAll(r => r.SessionID == sessionID || sessionID == null);
+        }
+
+        private void ResetOptions()
+        {
+            var sessionID = Options.SessionID.ToString();
+            ClearReports(sessionID);
+            Session["CSP_OPTIONS"] = null;
+            Response.Redirect(Request.Path, true);
         }
 
         protected void Page_PreRenderComplete(object sender, EventArgs e)
@@ -181,7 +175,10 @@ https://maxcdn.bootstrapcdn.com", Enabled=true },
             var json = GetReportData();
             if (!string.IsNullOrEmpty(json))
             {
-                var rpt = new ContentSecurityReport(json);
+                var rpt = new ContentSecurityReport(json)
+                {
+                    SessionID = Request.Params["session"]
+                };
                 Reports.Add(rpt);
             }
         }
@@ -292,5 +289,146 @@ https://maxcdn.bootstrapcdn.com", Enabled=true },
         {
             mvContents.ActiveViewIndex = 3;
         }
+
+        protected void LinkButton1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        protected void lnkToggleExpand_Click(object sender, EventArgs e)
+        {
+            var link = sender as LinkButton;
+            if (link != null)
+            {
+                var contents = link.Parent.FindControl("ItemContents") as Panel;
+                if (contents != null)
+                {
+                    contents.Visible = !contents.Visible;
+                }                
+            }
+
+            Options.ViewIndex = mvContents.ActiveViewIndex = 3;
+        }
+
+        protected void RefreshList_Click(object sender, EventArgs e)
+        {
+            DataBind();
+        }
+
+        protected void ClearList_Click(object sender, EventArgs e)
+        {
+            var sessionID = Options.SessionID.ToString();
+            ClearReports(sessionID);
+            DataBind();
+        }
+
     }
+
+    public class ContentSecurityOptions
+    {
+        public bool Enabled { get; set; }
+
+        public string BaseUrl { get; set; }
+        public bool BaseUrlEnabled { get; set; }
+
+        public string ReportUrl { get; set; }
+        public bool ReportUrlEnabled { get; set; }
+
+        public ContentSecuritySources Defaults { get; set; }
+        public List<ContentSecuritySources> Sources { get; set; }
+
+        public int ViewIndex { get; set; }
+
+        public Guid SessionID { get; set; }
+    }
+
+    public class ContentSecuritySources
+    {
+        public bool Enabled { get; set; }
+        public string Ident { get; set; }
+        public string Value { get; set; }
+    }
+
+    public class ContentSecurityReport
+    {
+        public string SessionID { get; set; }
+        public string RawText { get; set; }
+        public CspReport Data { get; set; }
+        public DateTime CreatedAt { get; set; }
+
+        public ContentSecurityReport(string input)
+        {
+            ParseInput(input);
+        }
+
+        private void ParseInput(string input)
+        {
+            RawText = JsonConvert.SerializeObject(JsonConvert.DeserializeObject(input), Formatting.Indented);
+            CreatedAt = DateTime.Now;
+            Data = new CspReport();
+            try
+            {
+                dynamic report = JsonConvert.DeserializeObject(input);
+                dynamic data = report["csp-report"];
+                if (data != null)
+                {
+                    Data.DocumentUri = data["document-uri"];
+                    Data.Referrer = data["referrer"];
+                    Data.ViolatedDirective = data["violated-directive"];
+                    Data.EffectiveDirective = data["effective-directive"];
+                    Data.OriginalPolicy = data["original-policy"];
+                    Data.BlockedUri = data["blocked-uri"];
+                    Data.StatusCode = data["status-code"];
+                }
+
+                if (!string.IsNullOrEmpty(Data.BlockedUri))
+                {
+                    Data.Description = string.Format("JavaScript Blocked! Remote Resource: {0}", Data.BlockedUri);
+                }
+                else
+                {
+                    Data.Description = string.Format("Refused to load {0}, because it violates the following Content Security Policy directive: {1}", ResolveDirectiveType(Data.EffectiveDirective), Data.EffectiveDirective);
+                }
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceError(ex.Message);
+            }
+        }
+
+        protected string ResolveDirectiveType(string directive)
+        {
+            switch (directive)
+            {
+                case "script-src": return "Javascript";
+                case "child-src": return "Child Object";
+                case "connect-src": return "Connection";
+                case "font-src": return "Font";
+                case "frame-src": return "IFrame";
+                case "img-src": return "Image";
+                case "media-src": return "Media";
+                case "object-src": return "Page Object";
+                case "plugin-types": return "Plugin";
+                case "style-src": return "Style Sheet";
+                case "form-action": return "Form Action";
+                case "default-src": return "Resource";
+            }
+            return "Unknown";
+        }
+
+    }
+
+    public class CspReport
+    {
+        public int StatusCode { get; set; }
+        public string DocumentUri { get; set; }
+        public string Referrer { get; set; }
+        public string ViolatedDirective { get; set; }
+        public string EffectiveDirective { get; set; }
+        public string OriginalPolicy { get; set; }
+        public string BlockedUri { get; set; }
+
+        public string Description { get; set; }
+    }
+
 }

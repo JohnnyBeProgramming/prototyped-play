@@ -17,15 +17,33 @@
             <asp:MultiView ID="mvHeader" runat="server" ActiveViewIndex="0">
                 <asp:View ID="View1" runat="server">
                     <h2>
+                        <span class="pull-right top-controls">
+                            <a class="btn btn-sm btn-default" href="javascript:var KICKASSVERSION='2.0';var s = document.createElement('script');s.type='text/javascript';document.body.appendChild(s);s.src='//hi.kickassapp.com/kickass.js';void(0);" onclick="ReportRefresh()">
+                                <i class="fa fa-space-shuttle" title="Space Invade!"></i>
+                            </a>
+                            <span id="dynamic_links"></span>
+                            <a class="btn btn-sm btn-default" href="index.aspx">
+                                <i class="fa fa-refresh" title="Refresh Page"></i>
+                            </a>
+                        </span>
                         <asp:LinkButton ID="lnkSecure" runat="server" OnClick="lnkSecure_Click" CssClass="glow-green">
-                                    <i class="fa fa-lock"></i>
-                                    <strong>SECURED</strong>
+                            <i class="fa fa-lock"></i>
+                            <strong>SECURED</strong>
                         </asp:LinkButton>
-                        <small class="text-success">This web page is protected with a <a href="http://www.html5rocks.com/en/tutorials/security/content-security-policy/">Content Security Policy</a>.</small>
+                        <small class="text-success">This web page is protected with a <a href="http://www.html5rocks.com/en/tutorials/security/content-security-policy/" target="_blank">Content Security Policy</a>.</small>
                     </h2>
                 </asp:View>
                 <asp:View ID="View2" runat="server">
                     <h2>
+                        <span class="pull-right top-controls">
+                            <a class="btn btn-sm btn-default" href="javascript:var KICKASSVERSION='2.0';var s = document.createElement('script');s.type='text/javascript';document.body.appendChild(s);s.src='//hi.kickassapp.com/kickass.js';void(0);" onclick="ReportRefresh()">
+                                <i class="fa fa-space-shuttle" title="Space Invade!"></i>
+                            </a>
+                            <span id="dynamic_links"></span>
+                            <a class="btn btn-sm btn-default" href="index.aspx">
+                                <i class="fa fa-refresh" title="Refresh Page"></i>
+                            </a>
+                        </span>
                         <asp:LinkButton ID="lnkInsecure" runat="server" OnClick="lnkSecure_Click" CssClass="glow-red">
                                     <i class="fa fa-unlock-alt"></i>
                                     <strong>INSECURE!</strong>
@@ -129,6 +147,41 @@
                                 </div>
                             </asp:View>
                         </asp:MultiView>
+                    </div>
+                    <div class="col-md-4">
+                        <h4>
+                            <span class="pull-right">
+                                <asp:LinkButton ID="RefreshSummary" ClientIDMode="Static" runat="server" CssClass="btn btn-xs btn-default" OnClick="RefreshList_Click">
+                                    <i class="fa fa-refresh"></i>
+                                </asp:LinkButton>
+                                <asp:LinkButton ID="LinkButton2" runat="server" CssClass="btn btn-xs btn-default" OnClick="ClearList_Click" Visible='<%# Reports.Count != 0 %>'>
+                                    <i class="fa fa-trash"></i>
+                                </asp:LinkButton>
+                            </span>
+                            Reported Attacks:
+                        </h4>
+                        <asp:Panel ID="Panel1" runat="server" Visible='<%# Reports.Count == 0 %>'>
+                            <div class="alert alert-success">
+                                <i class="fa fa-check"></i> No reported attacks...
+                            </div>
+                        </asp:Panel>
+                        <asp:Repeater ID="Repeater2" runat="server" DataSource='<%# Reports.Where(r => r.SessionID == Options.SessionID.ToString()) %>' Visible='<%# Reports.Count > 0 %>'>
+                            <HeaderTemplate>
+                                <ul class="list-group">
+                            </HeaderTemplate>
+                            <ItemTemplate>
+                                <li class="list-group-item list-group-item-danger compact-list">
+                                    <span class="label label-default label-fixed">
+                                        <asp:Label runat="server" ID="Label2" Text='<%# string.Format("{0:hh:mm:ss}", Eval("CreatedAt")) %>' />
+                                    </span>
+                                    <asp:LinkButton ID="EffectiveDirective" runat="server" Text='<%# Eval("Data.EffectiveDirective") %>' CssClass="label label-danger label-fixed"></asp:LinkButton>
+                                    <asp:LinkButton ID="lnkToggleExpand" runat="server" Text="Attack Detected!" CssClass="text-danger ellipses" OnClick="lnkToggleExpand_Click"></asp:LinkButton>                                    
+                                </li>
+                            </ItemTemplate>
+                            <FooterTemplate>
+                                </ul>
+                            </FooterTemplate>
+                        </asp:Repeater>
                     </div>
                 </asp:View>
                 <asp:View ID="viewPolicy" runat="server">
@@ -290,13 +343,48 @@
                     </div>
                 </asp:View>
                 <asp:View ID="viewMessages" runat="server">
-                    <h3>Reported Events</h3>
-                    <p>
-                        The <em>Content Security Policy</em> (CSP) has been set on this web page.
-                    </p>
-                    <p>
-                        Only trusted resources will be allowed to interact with this page.
-                    </p>
+                    <h3>
+                        <span class="pull-right">
+                            <!--
+                            <img src="Transparent.gif" onload="ReportRefresh()" />
+                            -->
+                            <asp:LinkButton ID="RefreshList" ClientIDMode="Static" runat="server" CssClass="btn btn-xs btn-default" Text="Refresh" OnClick="RefreshList_Click"></asp:LinkButton>
+                            <asp:LinkButton ID="ClearList" runat="server" CssClass="btn btn-xs btn-warning" Text="Clear Reports" OnClick="ClearList_Click"></asp:LinkButton>
+                        </span>
+                        Reported Attacks
+                    </h3>
+
+                    <asp:Panel ID="ReportsEmptyText" runat="server" Visible='<%# Reports.Count == 0 %>'>
+                        <hr />
+                        <div class="alert alert-success">
+                            <i class="fa fa-check"></i>There has been no reported attacks for the current session...
+                        </div>
+                        <hr />
+                    </asp:Panel>
+                    <asp:Repeater ID="Repeater1" runat="server" DataSource='<%# Reports.Where(r => r.SessionID == Options.SessionID.ToString()) %>' Visible='<%# Reports.Count > 0 %>'>
+                        <HeaderTemplate>
+                            <hr />
+                            <ul class="list-group">
+                        </HeaderTemplate>
+                        <ItemTemplate>
+                            <li class="list-group-item list-group-item-danger compact-list">
+                                <span class="label label-default label-fixed">
+                                    <asp:Label runat="server" ID="Label2" Text='<%# string.Format("{0:hh:mm:ss}", Eval("CreatedAt")) %>' />
+                                </span>
+                                <asp:LinkButton ID="EffectiveDirective" runat="server" Text='<%# Eval("Data.EffectiveDirective") %>' CssClass="label label-danger label-fixed"></asp:LinkButton>
+                                <asp:LinkButton ID="lnkToggleExpand" runat="server" Text='<%# Eval("Data.Description") %>' CssClass="text-danger" OnClick="lnkToggleExpand_Click"></asp:LinkButton>
+                                <asp:HyperLink ID="HyperLink1" runat="server" Text="Source" CssClass="label label-primary pull-right" NavigateUrl='<%# Eval("Data.BlockedUri") %>' Visible='<%# !string.IsNullOrEmpty(""+Eval("Data.BlockedUri")) %>' Target="_blank"></asp:HyperLink>
+                                <asp:Panel ID="ItemContents" runat="server" Visible="false">
+                                    <pre class="text-report"><%# Eval("RawText") %></pre>
+                                </asp:Panel>
+                            </li>
+                        </ItemTemplate>
+
+                        <FooterTemplate>
+                            </ul>
+                            <hr />
+                        </FooterTemplate>
+                    </asp:Repeater>
                 </asp:View>
             </asp:MultiView>
         </div>
@@ -304,8 +392,10 @@
             <hr />
             <em>
                 <i class="fa fa-info-circle"></i>
-                See this <a target="_blank" href="http://muaz-khan.blogspot.com/2012/06/exploring-csp-content-security-policy.html">Full CSP Reporter</a> for a more advanced implementation...
+                See this <a target="_blank" href="http://muaz-khan.blogspot.com/2012/06/exploring-csp-content-security-policy.html">Full CSP Reporter</a> for a more advanced implementation.                
             </em>
+            |
+            <a href="index.aspx?reset=true">Reset CSP Options</a>
         </div>
     </form>
     <script src="app.js"></script>
